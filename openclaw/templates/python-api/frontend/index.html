@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{PROJECT_NAME}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a; color: #e2e8f0;
+            min-height: 100vh; padding: 2rem;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .card {
+            background: #1e293b; border-radius: 12px;
+            padding: 1.5rem; margin-bottom: 1rem;
+            border: 1px solid #334155;
+        }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 999px;
+            font-size: 0.8rem; background: #065f46; color: #6ee7b7; }
+        input, button {
+            padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #334155;
+            background: #1e293b; color: #e2e8f0; font-size: 1rem;
+        }
+        button {
+            background: #3b82f6; border: none; cursor: pointer;
+            font-weight: 600; transition: background 0.2s;
+        }
+        button:hover { background: #2563eb; }
+        #result {
+            margin-top: 1rem; padding: 1rem; background: #0f172a;
+            border-radius: 8px; white-space: pre-wrap; min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 {{PROJECT_NAME}}</h1>
+        <p class="subtitle">{{DESCRIPTION}}</p>
+        <div class="card">
+            <p>API 状态: <span class="status" id="status">检查中...</span></p>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom:1rem">试一试</h3>
+            <div style="display:flex;gap:0.5rem">
+                <input id="input" placeholder="输入内容..." style="flex:1" />
+                <button onclick="callAPI()">发送</button>
+            </div>
+            <div id="result">等待输入...</div>
+        </div>
+    </div>
+    <script>
+        const API = 'http://localhost:8000';
+        fetch(API + '/health')
+            .then(r => r.json())
+            .then(() => { document.getElementById('status').textContent = '✅ 在线'; })
+            .catch(() => {
+                const s = document.getElementById('status');
+                s.textContent = '❌ 离线'; s.style.background = '#7f1d1d'; s.style.color = '#fca5a5';
+            });
+        async function callAPI() {
+            const input = document.getElementById('input').value;
+            const result = document.getElementById('result');
+            result.textContent = '处理中...';
+            try {
+                const r = await fetch(API + '/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: input})
+                });
+                const data = await r.json();
+                result.textContent = JSON.stringify(data, null, 2);
+            } catch(e) { result.textContent = '错误: ' + e.message; }
+        }
+    </script>
+</body>
+</html>

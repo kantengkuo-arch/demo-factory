@@ -1,0 +1,11 @@
+{
+    "name": "{{PROJECT_NAME}}",
+    "slug": "{{SLUG}}",
+    "direction": "{{DIRECTION}}",
+    "tech_stack": [],
+    "status": "completed",
+    "created_at": "{{CREATED_AT}}",
+    "description": "{{DESCRIPTION}}",
+    "has_frontend": true,
+    "has_backend": true
+}
