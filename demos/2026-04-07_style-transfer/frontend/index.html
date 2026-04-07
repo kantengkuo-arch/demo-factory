@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 图片风格迁移 Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  
+  /* 顶部 */
+  header { text-align: center; margin-bottom: 2rem; }
+  header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  header h1 span { font-size: 2.4rem; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  
+  /* 状态指示器 */
+  .status-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.5rem; margin-bottom: 2rem; padding: 0.6rem 1rem;
+    background: #1e293b; border-radius: 8px; font-size: 0.85rem;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ef4444; animation: pulse 1.5s infinite;
+  }
+  .status-dot.online { background: #22c55e; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  
+  /* 上传区 */
+  .upload-zone {
+    border: 2px dashed #334155; border-radius: 12px;
+    padding: 3rem 2rem; text-align: center; cursor: pointer;
+    transition: all 0.3s; margin-bottom: 2rem; position: relative;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #6366f1; background: rgba(99,102,241,0.05);
+  }
+  .upload-zone .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .upload-zone p { color: #94a3b8; }
+  .upload-zone input { display: none; }
+  
+  /* 预览 */
+  .preview-area {
+    display: none; margin-bottom: 2rem; text-align: center;
+  }
+  .preview-area img {
+    max-width: 100%; max-height: 300px; border-radius: 8px;
+    border: 1px solid #334155;
+  }
+  .preview-area .file-info {
+    margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;
+  }
+  
+  /* 风格选择 */
+  .styles-section { margin-bottom: 2rem; }
+  .styles-section h3 { margin-bottom: 1rem; font-size: 1.1rem; }
+  .style-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .style-card {
+    background: #1e293b; border: 2px solid #334155; border-radius: 10px;
+    padding: 1.2rem; text-align: center; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .style-card:hover { border-color: #6366f1; transform: translateY(-2px); }
+  .style-card.selected { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+  .style-card .emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+  .style-card .name { font-weight: 600; margin-bottom: 0.3rem; }
+  .style-card .desc { font-size: 0.8rem; color: #94a3b8; }
+  
+  /* 开始按钮 */
+  .action-bar { text-align: center; margin-bottom: 2rem; }
+  .btn-transfer {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white; border: none; padding: 0.9rem 2.5rem;
+    border-radius: 10px; font-size: 1.05rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .btn-transfer:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+  .btn-transfer:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none;
+  }
+  
+  /* 进度条 */
+  .progress-section {
+    display: none; margin-bottom: 2rem; padding: 1.5rem;
+    background: #1e293b; border-radius: 10px;
+  }
+  .progress-section .label { margin-bottom: 0.8rem; font-size: 0.9rem; }
+  .progress-bar-bg {
+    height: 8px; background: #334155; border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; background: linear-gradient(90deg, #6366f1, #a78bfa);
+    border-radius: 4px; width: 0%; transition: width 0.5s;
+  }
+  .progress-section .time-info {
+    margin-top: 0.5rem; font-size: 0.8rem; color: #94a3b8;
+  }
+  
+  /* 结果对比 */
+  .result-section { display: none; margin-bottom: 2rem; }
+  .result-section h3 { text-align: center; margin-bottom: 1rem; }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  }
+  .compare-item { text-align: center; }
+  .compare-item .label-tag {
+    display: inline-block; margin-bottom: 0.5rem; padding: 0.3rem 0.8rem;
+    background: #334155; border-radius: 6px; font-size: 0.85rem;
+  }
+  .compare-item img {
+    width: 100%; border-radius: 8px; border: 1px solid #334155;
+  }
+  
+  /* 下载按钮 */
+  .download-bar { text-align: center; margin-top: 1rem; }
+  .btn-download {
+    background: #22c55e; color: white; border: none;
+    padding: 0.7rem 2rem; border-radius: 8px; font-size: 0.95rem;
+    cursor: pointer; text-decoration: none; display: inline-block;
+    transition: all 0.3s;
+  }
+  .btn-download:hover { background: #16a34a; transform: scale(1.03); }
+  
+  /* 响应式 */
+  @media (max-width: 600px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .style-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span>🎨</span> 图片风格迁移</h1>
+    <p>上传照片，用 AI 将它变成油画、素描、水彩等艺术风格</p>
+  </header>
+
+  <!-- API 状态 -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">正在连接后端...</span>
+    <span id="deviceInfo" style="margin-left:auto; color:#64748b;"></span>
+  </div>
+
+  <!-- 上传区 -->
+  <div class="upload-zone" id="uploadZone">
+    <div class="icon">📤</div>
+    <p><strong>拖拽图片到这里</strong> 或点击选择文件</p>
+    <p style="font-size:0.8rem; margin-top:0.5rem;">支持 JPG、PNG，最大 10MB</p>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <!-- 预览 -->
+  <div class="preview-area" id="previewArea">
+    <img id="previewImg" alt="预览">
+    <div class="file-info" id="fileInfo"></div>
+  </div>
+
+  <!-- 风格选择 -->
+  <div class="styles-section" id="stylesSection" style="display:none;">
+    <h3>🖌️ 选择艺术风格</h3>
+    <div class="style-grid" id="styleGrid"></div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <div class="action-bar">
+    <button class="btn-transfer" id="btnTransfer" disabled>✨ 开始风格迁移</button>
+  </div>
+
+  <!-- 进度 -->
+  <div class="progress-section" id="progressSection">
+    <div class="label" id="progressLabel">⏳ 正在处理中...</div>
+    <div class="progress-bar-bg">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="time-info" id="timeInfo"></div>
+  </div>
+
+  <!-- 结果 -->
+  <div class="result-section" id="resultSection">
+    <h3>🎉 风格迁移完成</h3>
+    <div class="compare-grid">
+      <div class="compare-item">
+        <div class="label-tag">📷 原图</div>
+        <img id="originalImg" alt="原图">
+      </div>
+      <div class="compare-item">
+        <div class="label-tag" id="resultLabel">🎨 风格化</div>
+        <img id="resultImg" alt="结果">
+      </div>
+    </div>
+    <div class="download-bar">
+      <a class="btn-download" id="btnDownload" download>⬇️ 下载风格化图片</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let fileId = null;
+let selectedStyle = null;
+let uploadedFile = null;
+
+// === 初始化 ===
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const data = await r.json();
+    document.getElementById('statusDot').classList.add('online');
+    document.getElementById('statusText').textContent = '后端已连接';
+    const gpu = data.gpu_available ? '🟢 GPU' : '🟡 CPU';
+    document.getElementById('deviceInfo').textContent = `${gpu} | 分辨率 ${data.img_size}px`;
+    loadStyles();
+  } catch {
+    document.getElementById('statusText').textContent = '❌ 后端未连接，请启动 python3 app.py';
+  }
+}
+
+// 加载风格列表
+async function loadStyles() {
+  try {
+    const r = await fetch(`${API}/styles`);
+    const data = await r.json();
+    const grid = document.getElementById('styleGrid');
+    grid.innerHTML = '';
+    data.styles.forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'style-card';
+      card.dataset.key = s.key;
+      card.innerHTML = `<div class="emoji">${s.emoji}</div><div class="name">${s.name}</div><div class="desc">${s.description}</div>`;
+      card.onclick = () => selectStyle(s.key, card);
+      grid.appendChild(card);
+    });
+  } catch(e) {
+    console.error('加载风格失败:', e);
+  }
+}
+
+function selectStyle(key, card) {
+  document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedStyle = key;
+  updateButton();
+}
+
+function updateButton() {
+  document.getElementById('btnTransfer').disabled = !(fileId && selectedStyle);
+}
+
+// === 上传 ===
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file) {
+  if (!file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
+  if (file.size > 10*1024*1024) { alert('图片不能超过 10MB'); return; }
+  
+  uploadedFile = file;
+  
+  // 本地预览
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewArea').style.display = 'block';
+    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+    document.getElementById('fileInfo').textContent = `${file.name} · ${sizeMB} MB`;
+  };
+  reader.readAsDataURL(file);
+
+  // 上传到后端
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const r = await fetch(`${API}/upload`, { method: 'POST', body: formData });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail);
+    fileId = data.file_id;
+    document.getElementById('fileInfo').textContent += ` · ${data.width}×${data.height}px`;
+    document.getElementById('stylesSection').style.display = 'block';
+    updateButton();
+  } catch(e) {
+    alert('上传失败: ' + e.message);
+  }
+}
+
+// === 风格迁移 ===
+document.getElementById('btnTransfer').addEventListener('click', startTransfer);
+
+async function startTransfer() {
+  if (!fileId || !selectedStyle) return;
+
+  const btn = document.getElementById('btnTransfer');
+  btn.disabled = true;
+  btn.textContent = '⏳ 处理中...';
+
+  // 显示进度
+  const progressSection = document.getElementById('progressSection');
+  progressSection.style.display = 'block';
+  document.getElementById('resultSection').style.display = 'none';
+
+  // 模拟进度（实际是同步的，但给用户视觉反馈）
+  let progress = 0;
+  const progressBar = document.getElementById('progressBar');
+  const startTime = Date.now();
+  const timer = setInterval(() => {
+    progress = Math.min(progress + Math.random() * 3, 90);
+    progressBar.style.width = progress + '%';
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById('timeInfo').textContent = `已用时 ${elapsed} 秒`;
+  }, 500);
+
+  try {
+    const formData = new FormData();
+    formData.append('file_id', fileId);
+    formData.append('style', selectedStyle);
+
+    const r = await fetch(`${API}/style_transfer`, { method: 'POST', body: formData });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail);
+
+    clearInterval(timer);
+    progressBar.style.width = '100%';
+    document.getElementById('progressLabel').textContent = '✅ 处理完成！';
+    document.getElementById('timeInfo').textContent = `总耗时 ${data.processing_time} 秒 (${data.device})`;
+
+    // 显示结果
+    const resultSection = document.getElementById('resultSection');
+    document.getElementById('originalImg').src = document.getElementById('previewImg').src;
+    document.getElementById('resultImg').src = `${API}${data.download_url}`;
+    document.getElementById('resultLabel').textContent = `${getStyleEmoji(selectedStyle)} ${data.style_name}`;
+    document.getElementById('btnDownload').href = `${API}${data.download_url}`;
+    resultSection.style.display = 'block';
+  } catch(e) {
+    clearInterval(timer);
+    document.getElementById('progressLabel').textContent = '❌ 处理失败：' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✨ 开始风格迁移';
+}
+
+function getStyleEmoji(key) {
+  const map = { oil_painting: '🖼️', sketch: '✏️', watercolor: '🎨', impressionist: '🌅' };
+  return map[key] || '🎨';
+}
+
+// 启动
+checkHealth();
+</script>
+</body>
+</html>
