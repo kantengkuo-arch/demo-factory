@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "name": "图片风格迁移",
+    "slug": "style-transfer",
+    "direction": "计算机视觉 / 图像生成",
+    "tech_stack": [
+      "Python",
+      "FastAPI",
+      "PyTorch",
+      "torchvision",
+      "VGG19",
+      "Pillow"
+    ],
+    "status": "completed",
+    "created_at": "2026-04-07T20:31:00Z",
+    "description": "使用 PyTorch + VGG19 神经网络将照片转换为油画、素描、水彩等艺术风格",
+    "has_frontend": true,
+    "has_backend": true,
+    "folder": "2026-04-07_style-transfer"
+  }
+]
