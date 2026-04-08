@@ -20,6 +20,38 @@
   header h1 span { font-size: 2.4rem; }
   header p { color: #94a3b8; font-size: 0.95rem; }
   
+  /* 设备信息面板 */
+  .device-panel {
+    display: none; margin-bottom: 1.5rem; padding: 1rem 1.2rem;
+    border-radius: 10px; border: 1px solid #334155;
+    font-size: 0.88rem; line-height: 1.6;
+  }
+  .device-panel .device-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;
+  }
+  .device-panel .device-reason { margin-bottom: 0.5rem; }
+  .device-panel .device-suggestion {
+    white-space: pre-line; font-size: 0.82rem; opacity: 0.85;
+    padding: 0.6rem 0.8rem; border-radius: 6px;
+    background: rgba(0,0,0,0.2); margin-top: 0.5rem;
+  }
+  /* GPU 已启用：绿色 */
+  .device-panel.gpu-active {
+    background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3);
+  }
+  .device-panel.gpu-active .device-header { color: #22c55e; }
+  /* 有 GPU 但未启用：黄色警告 */
+  .device-panel.gpu-warning {
+    background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.3);
+  }
+  .device-panel.gpu-warning .device-header { color: #eab308; }
+  /* 无 GPU：灰色 */
+  .device-panel.cpu-only {
+    background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2);
+  }
+  .device-panel.cpu-only .device-header { color: #94a3b8; }
+
   /* 状态指示器 */
   .status-bar {
     display: flex; align-items: center; justify-content: center;
@@ -88,24 +120,91 @@
   .btn-transfer:disabled {
     opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none;
   }
-  
-  /* 进度条 */
-  .progress-section {
+
+  /* 动态流水线 */
+  .pipeline-section {
     display: none; margin-bottom: 2rem; padding: 1.5rem;
     background: #1e293b; border-radius: 10px;
+    border: 1px solid #334155;
   }
-  .progress-section .label { margin-bottom: 0.8rem; font-size: 0.9rem; }
-  .progress-bar-bg {
-    height: 8px; background: #334155; border-radius: 4px; overflow: hidden;
+  .pipeline-section h3 { text-align: center; margin-bottom: 1.2rem; font-size: 1rem; }
+  .pipeline-track {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; flex-wrap: nowrap; overflow-x: auto;
+    padding: 0.5rem 0;
   }
-  .progress-bar {
-    height: 100%; background: linear-gradient(90deg, #6366f1, #a78bfa);
-    border-radius: 4px; width: 0%; transition: width 0.5s;
+  .pipeline-node {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 80px; flex-shrink: 0;
   }
-  .progress-section .time-info {
-    margin-top: 0.5rem; font-size: 0.8rem; color: #94a3b8;
+  .pipeline-node .node-circle {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; border: 2px solid #475569;
+    background: #1e293b; transition: all 0.4s; position: relative;
   }
-  
+  .pipeline-node .node-label {
+    margin-top: 0.4rem; font-size: 0.72rem; color: #64748b;
+    text-align: center; white-space: nowrap; transition: color 0.4s;
+  }
+  /* 待执行：灰色 */
+  .pipeline-node.pending .node-circle { border-color: #475569; opacity: 0.5; }
+  .pipeline-node.pending .node-label { color: #475569; }
+  /* 执行中：蓝色呼吸灯 */
+  .pipeline-node.running .node-circle {
+    border-color: #38bdf8; background: rgba(56,189,248,0.12);
+    box-shadow: 0 0 12px rgba(56,189,248,0.4);
+    animation: breathe 1.5s ease-in-out infinite;
+    opacity: 1;
+  }
+  .pipeline-node.running .node-label { color: #38bdf8; font-weight: 600; }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 8px rgba(56,189,248,0.3); }
+    50% { box-shadow: 0 0 20px rgba(56,189,248,0.6); }
+  }
+  /* 已完成：绿色 + 打勾 */
+  .pipeline-node.done .node-circle {
+    border-color: #22c55e; background: rgba(34,197,94,0.12);
+    opacity: 1;
+  }
+  .pipeline-node.done .node-label { color: #22c55e; }
+  .pipeline-node.done .node-circle::after {
+    content: '✓'; position: absolute; bottom: -2px; right: -2px;
+    font-size: 0.6rem; background: #22c55e; color: #fff;
+    width: 16px; height: 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+  }
+  /* 连线箭头 */
+  .pipeline-arrow {
+    width: 28px; height: 2px; background: #475569; position: relative;
+    flex-shrink: 0; margin: 0 2px; margin-bottom: 1.4rem;
+    transition: background 0.4s;
+  }
+  .pipeline-arrow::after {
+    content: ''; position: absolute; right: -1px; top: -3px;
+    border: 4px solid transparent; border-left-color: #475569;
+    transition: border-left-color 0.4s;
+  }
+  .pipeline-arrow.done { background: #22c55e; }
+  .pipeline-arrow.done::after { border-left-color: #22c55e; }
+  .pipeline-arrow.active { background: #38bdf8; }
+  .pipeline-arrow.active::after { border-left-color: #38bdf8; }
+
+  /* 当前步骤描述 */
+  .pipeline-desc {
+    text-align: center; margin-top: 1rem;
+    font-size: 0.88rem; color: #94a3b8; min-height: 1.4em;
+    transition: color 0.3s;
+  }
+  .pipeline-desc.active { color: #38bdf8; }
+
+  /* 进度时间 */
+  .pipeline-time {
+    text-align: center; margin-top: 0.6rem;
+    font-size: 0.8rem; color: #64748b;
+  }
+
   /* 结果对比 */
   .result-section { display: none; margin-bottom: 2rem; }
   .result-section h3 { text-align: center; margin-bottom: 1rem; }
@@ -130,28 +229,15 @@
     transition: all 0.3s;
   }
   .btn-download:hover { background: #16a34a; transform: scale(1.03); }
-  
-  /* 流程说明 */
-  .pipeline-section {
-    margin-top: 2rem; padding: 1.5rem;
-    background: #1e293b; border-radius: 10px;
-    border: 1px solid #334155;
-  }
-  .pipeline-section h3 { margin-bottom: 0.8rem; font-size: 1rem; }
-  .pipeline-steps {
-    display: flex; flex-wrap: wrap; align-items: center;
-    gap: 0.4rem; font-size: 0.85rem; color: #94a3b8; line-height: 1.8;
-  }
-  .pipeline-steps .step {
-    background: #334155; padding: 0.3rem 0.7rem;
-    border-radius: 6px; white-space: nowrap;
-  }
-  .pipeline-steps .arrow { color: #6366f1; font-weight: bold; }
 
   /* 响应式 */
   @media (max-width: 600px) {
     .compare-grid { grid-template-columns: 1fr; }
     .style-grid { grid-template-columns: 1fr 1fr; }
+    .pipeline-node { min-width: 60px; }
+    .pipeline-node .node-circle { width: 36px; height: 36px; font-size: 1.1rem; }
+    .pipeline-node .node-label { font-size: 0.65rem; }
+    .pipeline-arrow { width: 16px; }
   }
 </style>
 </head>
@@ -161,6 +247,13 @@
     <h1><span>🎨</span> 图片风格迁移</h1>
     <p>上传照片，用 AI 将它变成油画、素描、水彩等艺术风格</p>
   </header>
+
+  <!-- 设备信息面板 -->
+  <div class="device-panel" id="devicePanel">
+    <div class="device-header" id="deviceHeader"></div>
+    <div class="device-reason" id="deviceReason"></div>
+    <div class="device-suggestion" id="deviceSuggestion" style="display:none;"></div>
+  </div>
 
   <!-- API 状态 -->
   <div class="status-bar">
@@ -194,13 +287,12 @@
     <button class="btn-transfer" id="btnTransfer" disabled>✨ 开始风格迁移</button>
   </div>
 
-  <!-- 进度 -->
-  <div class="progress-section" id="progressSection">
-    <div class="label" id="progressLabel">⏳ 正在处理中...</div>
-    <div class="progress-bar-bg">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-    <div class="time-info" id="timeInfo"></div>
+  <!-- 动态流水线 -->
+  <div class="pipeline-section" id="pipelineSection">
+    <h3>📋 风格迁移处理流程</h3>
+    <div class="pipeline-track" id="pipelineTrack"></div>
+    <div class="pipeline-desc" id="pipelineDesc"></div>
+    <div class="pipeline-time" id="pipelineTime"></div>
   </div>
 
   <!-- 结果 -->
@@ -220,24 +312,6 @@
       <a class="btn-download" id="btnDownload" download>⬇️ 下载风格化图片</a>
     </div>
   </div>
-
-  <!-- 处理流程说明 -->
-  <div class="pipeline-section">
-    <h3>📋 风格迁移处理流程</h3>
-    <div class="pipeline-steps">
-      <span class="step">📤 上传图片</span>
-      <span class="arrow">→</span>
-      <span class="step">🔧 图像预处理（缩放至统一尺寸并归一化）</span>
-      <span class="arrow">→</span>
-      <span class="step">🧠 VGG19 提取内容特征与风格特征</span>
-      <span class="arrow">→</span>
-      <span class="step">📐 计算 Gram 矩阵匹配风格纹理</span>
-      <span class="arrow">→</span>
-      <span class="step">🔄 L-BFGS 迭代优化生成图像</span>
-      <span class="arrow">→</span>
-      <span class="step">🎨 输出风格化结果</span>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -245,6 +319,71 @@ const API = 'http://localhost:8000';
 let fileId = null;
 let selectedStyle = null;
 let uploadedFile = null;
+
+// 流水线步骤定义（与后端 TRANSFER_STEPS 对应）
+const PIPELINE_STEPS = [
+  { step: 1, emoji: '📤', name: '接收图片', description: '读取上传的内容图和风格图' },
+  { step: 2, emoji: '🔧', name: '图像预处理', description: '缩放至统一尺寸并归一化' },
+  { step: 3, emoji: '🧠', name: 'VGG19 特征提取', description: '提取内容特征与风格特征' },
+  { step: 4, emoji: '📐', name: 'Gram 矩阵计算', description: '计算风格纹理的 Gram 矩阵' },
+  { step: 5, emoji: '🔄', name: 'L-BFGS 迭代优化', description: '迭代生成风格化图像' },
+  { step: 6, emoji: '🎨', name: '输出结果', description: '返回最终风格迁移图片' },
+];
+
+// === 流水线 UI ===
+function initPipeline() {
+  const track = document.getElementById('pipelineTrack');
+  track.innerHTML = '';
+  PIPELINE_STEPS.forEach((s, i) => {
+    // 节点
+    const node = document.createElement('div');
+    node.className = 'pipeline-node pending';
+    node.id = `pnode-${s.step}`;
+    node.innerHTML = `<div class="node-circle">${s.emoji}</div><div class="node-label">${s.name}</div>`;
+    track.appendChild(node);
+    // 箭头（最后一个不加）
+    if (i < PIPELINE_STEPS.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'pipeline-arrow';
+      arrow.id = `parrow-${s.step}`;
+      track.appendChild(arrow);
+    }
+  });
+  document.getElementById('pipelineDesc').textContent = '';
+  document.getElementById('pipelineDesc').classList.remove('active');
+  document.getElementById('pipelineTime').textContent = '';
+}
+
+function updatePipelineStep(stepNum, status, description) {
+  const node = document.getElementById(`pnode-${stepNum}`);
+  if (!node) return;
+
+  // 更新节点状态
+  node.className = `pipeline-node ${status}`;
+
+  // 更新前面的箭头
+  if (status === 'done' && stepNum > 1) {
+    const prevArrow = document.getElementById(`parrow-${stepNum - 1}`);
+    if (prevArrow) prevArrow.className = 'pipeline-arrow done';
+  }
+  if (status === 'running' && stepNum > 1) {
+    const prevArrow = document.getElementById(`parrow-${stepNum - 1}`);
+    if (prevArrow && !prevArrow.classList.contains('done')) {
+      prevArrow.className = 'pipeline-arrow active';
+    }
+  }
+
+  // 更新描述
+  const desc = document.getElementById('pipelineDesc');
+  if (status === 'running') {
+    const stepInfo = PIPELINE_STEPS.find(s => s.step === stepNum);
+    desc.textContent = `${stepInfo ? stepInfo.emoji : ''} 步骤 ${stepNum}/6：${description || ''}`;
+    desc.classList.add('active');
+  } else if (status === 'done' && stepNum === 6) {
+    desc.textContent = '✅ 全部步骤完成！';
+    desc.classList.remove('active');
+  }
+}
 
 // === 初始化 ===
 async function checkHealth() {
@@ -256,8 +395,47 @@ async function checkHealth() {
     const gpu = data.gpu_available ? '🟢 GPU' : '🟡 CPU';
     document.getElementById('deviceInfo').textContent = `${gpu} | 分辨率 ${data.img_size}px`;
     loadStyles();
+    loadDeviceInfo();
   } catch {
     document.getElementById('statusText').textContent = '❌ 后端未连接，请启动 python3 app.py';
+  }
+}
+
+// 加载设备详情面板
+async function loadDeviceInfo() {
+  try {
+    const r = await fetch(`${API}/device-info`);
+    const data = await r.json();
+    const panel = document.getElementById('devicePanel');
+    const header = document.getElementById('deviceHeader');
+    const reason = document.getElementById('deviceReason');
+    const suggestion = document.getElementById('deviceSuggestion');
+
+    if (data.gpu_available) {
+      // GPU 已启用 — 绿色
+      panel.className = 'device-panel gpu-active';
+      header.innerHTML = `🟢 GPU 加速已启用 — ${data.gpu_name || 'GPU'}`;
+      reason.textContent = data.reason;
+      suggestion.style.display = 'none';
+    } else if (data.gpu_name) {
+      // 有物理 GPU 但未启用 — 黄色警告
+      panel.className = 'device-panel gpu-warning';
+      header.innerHTML = `⚠️ 检测到 GPU 但未启用`;
+      reason.textContent = data.reason;
+      suggestion.textContent = data.suggestion;
+      suggestion.style.display = 'block';
+    } else {
+      // 无 GPU — 灰色
+      panel.className = 'device-panel cpu-only';
+      header.innerHTML = `💻 使用 CPU 运算`;
+      reason.textContent = data.reason;
+      suggestion.textContent = data.suggestion;
+      suggestion.style.display = 'block';
+    }
+
+    panel.style.display = 'block';
+  } catch(e) {
+    console.error('加载设备信息失败:', e);
   }
 }
 
@@ -344,7 +522,7 @@ async function handleFile(file) {
   }
 }
 
-// === 风格迁移 ===
+// === 风格迁移（SSE 流式） ===
 document.getElementById('btnTransfer').addEventListener('click', startTransfer);
 
 async function startTransfer() {
@@ -354,20 +532,17 @@ async function startTransfer() {
   btn.disabled = true;
   btn.textContent = '⏳ 处理中...';
 
-  // 显示进度
-  const progressSection = document.getElementById('progressSection');
-  progressSection.style.display = 'block';
+  // 显示流水线，隐藏旧结果
+  const pipelineSection = document.getElementById('pipelineSection');
+  pipelineSection.style.display = 'block';
   document.getElementById('resultSection').style.display = 'none';
+  initPipeline();
 
-  // 模拟进度（实际是同步的，但给用户视觉反馈）
-  let progress = 0;
-  const progressBar = document.getElementById('progressBar');
   const startTime = Date.now();
+  // 定时更新耗时
   const timer = setInterval(() => {
-    progress = Math.min(progress + Math.random() * 3, 90);
-    progressBar.style.width = progress + '%';
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    document.getElementById('timeInfo').textContent = `已用时 ${elapsed} 秒`;
+    document.getElementById('pipelineTime').textContent = `已用时 ${elapsed} 秒`;
   }, 500);
 
   try {
@@ -375,25 +550,67 @@ async function startTransfer() {
     formData.append('file_id', fileId);
     formData.append('style', selectedStyle);
 
-    const r = await fetch(`${API}/style_transfer`, { method: 'POST', body: formData });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.detail);
+    // 使用 fetch + ReadableStream 消费 SSE（因为是 POST 请求，不能用 EventSource）
+    const response = await fetch(`${API}/transfer-stream`, { method: 'POST', body: formData });
 
-    clearInterval(timer);
-    progressBar.style.width = '100%';
-    document.getElementById('progressLabel').textContent = '✅ 处理完成！';
-    document.getElementById('timeInfo').textContent = `总耗时 ${data.processing_time} 秒 (${data.device})`;
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || '请求失败');
+    }
 
-    // 显示结果
-    const resultSection = document.getElementById('resultSection');
-    document.getElementById('originalImg').src = document.getElementById('previewImg').src;
-    document.getElementById('resultImg').src = `${API}${data.download_url}`;
-    document.getElementById('resultLabel').textContent = `${getStyleEmoji(selectedStyle)} ${data.style_name}`;
-    document.getElementById('btnDownload').href = `${API}${data.download_url}`;
-    resultSection.style.display = 'block';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // 按双换行分割 SSE 事件
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop(); // 最后一段可能不完整，保留
+
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+
+        // 提取 data: 行
+        for (const line of trimmed.split('\n')) {
+          if (line.startsWith('data: ')) {
+            try {
+              const evt = JSON.parse(line.slice(6));
+
+              if (evt.type === 'result') {
+                // 最终结果
+                clearInterval(timer);
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                document.getElementById('pipelineTime').textContent = `总耗时 ${elapsed} 秒`;
+
+                // 显示结果
+                const resultSection = document.getElementById('resultSection');
+                document.getElementById('originalImg').src = document.getElementById('previewImg').src;
+                document.getElementById('resultImg').src = `data:image/png;base64,${evt.image_base64}`;
+                const styleName = PIPELINE_STEPS[5].name;
+                document.getElementById('resultLabel').textContent = `${getStyleEmoji(selectedStyle)} ${selectedStyle}`;
+                document.getElementById('btnDownload').href = `${API}${evt.download_url}`;
+                resultSection.style.display = 'block';
+              } else if (evt.step !== undefined) {
+                // 步骤事件
+                updatePipelineStep(evt.step, evt.status, evt.description);
+              }
+            } catch(parseErr) {
+              console.warn('SSE 解析跳过:', line, parseErr);
+            }
+          }
+        }
+      }
+    }
   } catch(e) {
     clearInterval(timer);
-    document.getElementById('progressLabel').textContent = '❌ 处理失败：' + e.message;
+    document.getElementById('pipelineDesc').textContent = '❌ 处理失败：' + e.message;
+    document.getElementById('pipelineDesc').classList.remove('active');
   }
 
   btn.disabled = false;
