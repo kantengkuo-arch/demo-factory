@@ -17,5 +17,23 @@
     "has_frontend": true,
     "has_backend": true,
     "folder": "2026-04-07_style-transfer"
+  },
+  {
+    "name": "AI 语音克隆",
+    "slug": "voice-clone",
+    "direction": "AI 语音克隆",
+    "tech_stack": [
+      "Python",
+      "FastAPI",
+      "OpenVoice",
+      "edge-tts",
+      "soundfile"
+    ],
+    "status": "completed",
+    "created_at": "2026-04-08T10:47:00Z",
+    "description": "上传参考音频，输入文字，AI 用克隆的声音朗读出来",
+    "has_frontend": true,
+    "has_backend": true,
+    "folder": "2026-04-08_voice-clone"
   }
 ]
