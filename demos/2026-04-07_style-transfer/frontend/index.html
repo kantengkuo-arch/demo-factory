@@ -13,13 +13,13 @@
     min-height: 100vh;
   }
   .container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-  
+
   /* 顶部 */
   header { text-align: center; margin-bottom: 2rem; }
   header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
   header h1 span { font-size: 2.4rem; }
   header p { color: #94a3b8; font-size: 0.95rem; }
-  
+
   /* 状态指示器 */
   .status-bar {
     display: flex; align-items: center; justify-content: center;
@@ -32,7 +32,7 @@
   }
   .status-dot.online { background: #22c55e; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-  
+
   /* 上传区 */
   .upload-zone {
     border: 2px dashed #334155; border-radius: 12px;
@@ -45,7 +45,7 @@
   .upload-zone .icon { font-size: 3rem; margin-bottom: 1rem; }
   .upload-zone p { color: #94a3b8; }
   .upload-zone input { display: none; }
-  
+
   /* 预览 */
   .preview-area {
     display: none; margin-bottom: 2rem; text-align: center;
@@ -57,7 +57,7 @@
   .preview-area .file-info {
     margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;
   }
-  
+
   /* 风格选择 */
   .styles-section { margin-bottom: 2rem; }
   .styles-section h3 { margin-bottom: 1rem; font-size: 1.1rem; }
@@ -75,7 +75,7 @@
   .style-card .emoji { font-size: 2rem; margin-bottom: 0.5rem; }
   .style-card .name { font-weight: 600; margin-bottom: 0.3rem; }
   .style-card .desc { font-size: 0.8rem; color: #94a3b8; }
-  
+
   /* 开始按钮 */
   .action-bar { text-align: center; margin-bottom: 2rem; }
   .btn-transfer {
@@ -88,8 +88,74 @@
   .btn-transfer:disabled {
     opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none;
   }
-  
-  /* 进度条 */
+
+  /* ========== 动态流水线 ========== */
+  .pipeline-section {
+    display: none; margin-bottom: 2rem; padding: 1.5rem 1rem;
+    background: #1e293b; border-radius: 10px; border: 1px solid #334155;
+  }
+  .pipeline-section h3 {
+    text-align: center; margin-bottom: 1.2rem; font-size: 1rem;
+  }
+  /* 横向流水线容器 */
+  .pipeline-track {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; overflow-x: auto; padding: 0.5rem 0;
+  }
+  /* 单个步骤节点 */
+  .pipeline-node {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 80px; position: relative;
+  }
+  .pipeline-node .node-circle {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; border: 2px solid #475569;
+    background: #1e293b; transition: all 0.4s; position: relative;
+  }
+  .pipeline-node .node-label {
+    margin-top: 0.4rem; font-size: 0.72rem; color: #64748b;
+    text-align: center; white-space: nowrap; transition: color 0.4s;
+  }
+  /* 节点状态：待执行（默认） */
+  .pipeline-node.pending .node-circle { border-color: #475569; color: #64748b; }
+  /* 节点状态：执行中 */
+  .pipeline-node.running .node-circle {
+    border-color: #38bdf8; color: #fff;
+    box-shadow: 0 0 12px rgba(56,189,248,0.5);
+    animation: breathe 1.5s ease-in-out infinite;
+  }
+  .pipeline-node.running .node-label { color: #38bdf8; font-weight: 600; }
+  /* 节点状态：完成 */
+  .pipeline-node.done .node-circle {
+    border-color: #22c55e; background: #22c55e; color: #fff;
+  }
+  .pipeline-node.done .node-label { color: #22c55e; }
+  /* 完成后显示打勾覆盖 */
+  .pipeline-node.done .node-circle::after {
+    content: "✓"; position: absolute; font-size: 1.1rem; font-weight: bold;
+  }
+  .pipeline-node.done .node-circle .node-emoji { visibility: hidden; }
+
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 8px rgba(56,189,248,0.4); }
+    50% { box-shadow: 0 0 20px rgba(56,189,248,0.7); }
+  }
+
+  /* 连接线 */
+  .pipeline-connector {
+    width: 32px; height: 2px; background: #475569;
+    flex-shrink: 0; transition: background 0.4s; margin-top: -1.2rem;
+  }
+  .pipeline-connector.done { background: #22c55e; }
+
+  /* 步骤描述文字 */
+  .pipeline-desc {
+    text-align: center; margin-top: 1rem; font-size: 0.85rem;
+    color: #94a3b8; min-height: 1.2em; transition: color 0.3s;
+  }
+
+  /* 进度条（用于迭代优化时） */
   .progress-section {
     display: none; margin-bottom: 2rem; padding: 1.5rem;
     background: #1e293b; border-radius: 10px;
@@ -105,7 +171,7 @@
   .progress-section .time-info {
     margin-top: 0.5rem; font-size: 0.8rem; color: #94a3b8;
   }
-  
+
   /* 结果对比 */
   .result-section { display: none; margin-bottom: 2rem; }
   .result-section h3 { text-align: center; margin-bottom: 1rem; }
@@ -120,7 +186,7 @@
   .compare-item img {
     width: 100%; border-radius: 8px; border: 1px solid #334155;
   }
-  
+
   /* 下载按钮 */
   .download-bar { text-align: center; margin-top: 1rem; }
   .btn-download {
@@ -130,28 +196,16 @@
     transition: all 0.3s;
   }
   .btn-download:hover { background: #16a34a; transform: scale(1.03); }
-  
-  /* 流程说明 */
-  .pipeline-section {
-    margin-top: 2rem; padding: 1.5rem;
-    background: #1e293b; border-radius: 10px;
-    border: 1px solid #334155;
-  }
-  .pipeline-section h3 { margin-bottom: 0.8rem; font-size: 1rem; }
-  .pipeline-steps {
-    display: flex; flex-wrap: wrap; align-items: center;
-    gap: 0.4rem; font-size: 0.85rem; color: #94a3b8; line-height: 1.8;
-  }
-  .pipeline-steps .step {
-    background: #334155; padding: 0.3rem 0.7rem;
-    border-radius: 6px; white-space: nowrap;
-  }
-  .pipeline-steps .arrow { color: #6366f1; font-weight: bold; }
 
   /* 响应式 */
   @media (max-width: 600px) {
     .compare-grid { grid-template-columns: 1fr; }
     .style-grid { grid-template-columns: 1fr 1fr; }
+    .pipeline-track { flex-wrap: wrap; gap: 0.3rem; justify-content: center; }
+    .pipeline-connector { width: 20px; }
+    .pipeline-node { min-width: 60px; }
+    .pipeline-node .node-circle { width: 36px; height: 36px; font-size: 1rem; }
+    .pipeline-node .node-label { font-size: 0.65rem; }
   }
 </style>
 </head>
@@ -194,7 +248,16 @@
     <button class="btn-transfer" id="btnTransfer" disabled>✨ 开始风格迁移</button>
   </div>
 
-  <!-- 进度 -->
+  <!-- 动态流水线 -->
+  <div class="pipeline-section" id="pipelineSection">
+    <h3>📋 风格迁移处理流程</h3>
+    <div class="pipeline-track" id="pipelineTrack">
+      <!-- 由 JS 动态生成 -->
+    </div>
+    <div class="pipeline-desc" id="pipelineDesc"></div>
+  </div>
+
+  <!-- 进度条（迭代优化时的二级进度） -->
   <div class="progress-section" id="progressSection">
     <div class="label" id="progressLabel">⏳ 正在处理中...</div>
     <div class="progress-bar-bg">
@@ -220,24 +283,6 @@
       <a class="btn-download" id="btnDownload" download>⬇️ 下载风格化图片</a>
     </div>
   </div>
-
-  <!-- 处理流程说明 -->
-  <div class="pipeline-section">
-    <h3>📋 风格迁移处理流程</h3>
-    <div class="pipeline-steps">
-      <span class="step">📤 上传图片</span>
-      <span class="arrow">→</span>
-      <span class="step">🔧 图像预处理（缩放至统一尺寸并归一化）</span>
-      <span class="arrow">→</span>
-      <span class="step">🧠 VGG19 提取内容特征与风格特征</span>
-      <span class="arrow">→</span>
-      <span class="step">📐 计算 Gram 矩阵匹配风格纹理</span>
-      <span class="arrow">→</span>
-      <span class="step">🔄 L-BFGS 迭代优化生成图像</span>
-      <span class="arrow">→</span>
-      <span class="step">🎨 输出风格化结果</span>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -245,6 +290,70 @@ const API = 'http://localhost:8000';
 let fileId = null;
 let selectedStyle = null;
 let uploadedFile = null;
+
+// 6 个步骤的元信息（与后端 TRANSFER_STEPS 对应）
+const STEPS = [
+  { step: 1, emoji: '📤', name: '接收图片' },
+  { step: 2, emoji: '🔧', name: '图像预处理' },
+  { step: 3, emoji: '🧠', name: 'VGG19 特征提取' },
+  { step: 4, emoji: '📐', name: 'Gram 矩阵计算' },
+  { step: 5, emoji: '🔄', name: 'L-BFGS 迭代优化' },
+  { step: 6, emoji: '🎨', name: '输出结果' },
+];
+
+// === 初始化流水线 DOM ===
+function initPipeline() {
+  const track = document.getElementById('pipelineTrack');
+  track.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    // 节点
+    const node = document.createElement('div');
+    node.className = 'pipeline-node pending';
+    node.id = `pnode-${s.step}`;
+    node.innerHTML = `
+      <div class="node-circle"><span class="node-emoji">${s.emoji}</span></div>
+      <div class="node-label">${s.name}</div>
+    `;
+    track.appendChild(node);
+    // 连线（最后一个步骤后面不加）
+    if (i < STEPS.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'pipeline-connector';
+      conn.id = `pconn-${s.step}`;
+      track.appendChild(conn);
+    }
+  });
+}
+
+// 更新某一步的状态
+function setPipelineStep(stepNum, status, description) {
+  const node = document.getElementById(`pnode-${stepNum}`);
+  if (!node) return;
+  node.className = `pipeline-node ${status}`;
+
+  // 如果完成，连线也变绿
+  if (status === 'done') {
+    const conn = document.getElementById(`pconn-${stepNum}`);
+    if (conn) conn.classList.add('done');
+  }
+
+  // 更新描述
+  if (description) {
+    document.getElementById('pipelineDesc').textContent =
+      `${STEPS[stepNum - 1].emoji} ${description}`;
+  }
+}
+
+// 重置所有流水线节点
+function resetPipeline() {
+  STEPS.forEach(s => {
+    const node = document.getElementById(`pnode-${s.step}`);
+    if (node) node.className = 'pipeline-node pending';
+    const conn = document.getElementById(`pconn-${s.step}`);
+    if (conn) conn.classList.remove('done');
+  });
+  document.getElementById('pipelineDesc').textContent = '';
+}
 
 // === 初始化 ===
 async function checkHealth() {
@@ -315,9 +424,9 @@ fileInput.addEventListener('change', () => {
 async function handleFile(file) {
   if (!file.type.startsWith('image/')) { alert('请选择图片文件'); return; }
   if (file.size > 10*1024*1024) { alert('图片不能超过 10MB'); return; }
-  
+
   uploadedFile = file;
-  
+
   // 本地预览
   const reader = new FileReader();
   reader.onload = e => {
@@ -344,7 +453,7 @@ async function handleFile(file) {
   }
 }
 
-// === 风格迁移 ===
+// === 风格迁移（SSE 版本） ===
 document.getElementById('btnTransfer').addEventListener('click', startTransfer);
 
 async function startTransfer() {
@@ -354,50 +463,121 @@ async function startTransfer() {
   btn.disabled = true;
   btn.textContent = '⏳ 处理中...';
 
-  // 显示进度
-  const progressSection = document.getElementById('progressSection');
-  progressSection.style.display = 'block';
+  // 显示流水线，隐藏结果
+  const pipelineSection = document.getElementById('pipelineSection');
+  pipelineSection.style.display = 'block';
   document.getElementById('resultSection').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'none';
+  initPipeline();
 
-  // 模拟进度（实际是同步的，但给用户视觉反馈）
-  let progress = 0;
-  const progressBar = document.getElementById('progressBar');
   const startTime = Date.now();
-  const timer = setInterval(() => {
-    progress = Math.min(progress + Math.random() * 3, 90);
-    progressBar.style.width = progress + '%';
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    document.getElementById('timeInfo').textContent = `已用时 ${elapsed} 秒`;
-  }, 500);
 
   try {
+    // 使用 fetch + ReadableStream 连接 SSE 接口
     const formData = new FormData();
     formData.append('file_id', fileId);
     formData.append('style', selectedStyle);
 
-    const r = await fetch(`${API}/style_transfer`, { method: 'POST', body: formData });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.detail);
+    const response = await fetch(`${API}/transfer-stream`, {
+      method: 'POST',
+      body: formData,
+    });
 
-    clearInterval(timer);
-    progressBar.style.width = '100%';
-    document.getElementById('progressLabel').textContent = '✅ 处理完成！';
-    document.getElementById('timeInfo').textContent = `总耗时 ${data.processing_time} 秒 (${data.device})`;
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || '请求失败');
+    }
 
-    // 显示结果
-    const resultSection = document.getElementById('resultSection');
-    document.getElementById('originalImg').src = document.getElementById('previewImg').src;
-    document.getElementById('resultImg').src = `${API}${data.download_url}`;
-    document.getElementById('resultLabel').textContent = `${getStyleEmoji(selectedStyle)} ${data.style_name}`;
-    document.getElementById('btnDownload').href = `${API}${data.download_url}`;
-    resultSection.style.display = 'block';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // 按 SSE 协议解析：每条消息以 \n\n 分隔
+      const parts = buffer.split('\n\n');
+      // 最后一段可能不完整，保留在 buffer 中
+      buffer = parts.pop() || '';
+
+      for (const part of parts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+
+        // 提取 data: 后面的 JSON
+        const lines = trimmed.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              handleSSEEvent(data, startTime);
+            } catch (e) {
+              console.warn('SSE 解析失败:', line, e);
+            }
+          }
+        }
+      }
+    }
   } catch(e) {
-    clearInterval(timer);
-    document.getElementById('progressLabel').textContent = '❌ 处理失败：' + e.message;
+    document.getElementById('pipelineDesc').textContent = '❌ 处理失败：' + e.message;
+    document.getElementById('pipelineDesc').style.color = '#ef4444';
   }
 
   btn.disabled = false;
   btn.textContent = '✨ 开始风格迁移';
+}
+
+function handleSSEEvent(data, startTime) {
+  // 步骤事件（包含 step 字段）
+  if (data.step !== undefined && data.status) {
+    setPipelineStep(data.step, data.status, data.description);
+
+    // 步骤 5 执行中时显示进度条
+    if (data.step === 5 && data.status === 'running') {
+      document.getElementById('progressSection').style.display = 'block';
+      document.getElementById('progressLabel').textContent = '🔄 L-BFGS 迭代优化中...';
+      document.getElementById('progressBar').style.width = '10%';
+    }
+    if (data.step === 5 && data.status === 'done') {
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('progressLabel').textContent = '✅ 迭代优化完成';
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      document.getElementById('timeInfo').textContent = `已用时 ${elapsed} 秒`;
+    }
+
+    // 更新时间
+    if (data.status === 'running') {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      document.getElementById('timeInfo').textContent = `已用时 ${elapsed} 秒`;
+    }
+  }
+
+  // 最终结果事件
+  if (data.type === 'result') {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById('pipelineDesc').textContent = `🎉 全部完成！总耗时 ${elapsed} 秒`;
+
+    // 隐藏进度条
+    document.getElementById('progressSection').style.display = 'none';
+
+    // 显示结果对比
+    const resultSection = document.getElementById('resultSection');
+    document.getElementById('originalImg').src = document.getElementById('previewImg').src;
+
+    // 优先使用 base64 图片展示
+    if (data.image_base64) {
+      document.getElementById('resultImg').src = `data:image/png;base64,${data.image_base64}`;
+    } else {
+      document.getElementById('resultImg').src = `${API}${data.download_url}`;
+    }
+
+    document.getElementById('resultLabel').textContent = `${getStyleEmoji(selectedStyle)} 风格化`;
+    document.getElementById('btnDownload').href = `${API}${data.download_url}`;
+    resultSection.style.display = 'block';
+  }
 }
 
 function getStyleEmoji(key) {
@@ -405,7 +585,8 @@ function getStyleEmoji(key) {
   return map[key] || '🎨';
 }
 
-// 启动
+// 初始化
+initPipeline();
 checkHealth();
 </script>
 </body>
