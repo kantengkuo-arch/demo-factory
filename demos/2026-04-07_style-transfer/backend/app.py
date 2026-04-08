@@ -10,6 +10,7 @@ import json
 import uuid
 import time
 import base64
+import subprocess
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -386,6 +387,70 @@ async def health_check():
         "img_size": IMG_SIZE,
         "gpu_available": torch.cuda.is_available(),
     }
+
+
+@app.get("/device-info")
+async def device_info():
+    """
+    返回 GPU/CPU 设备详细检测信息
+    包含设备类型、GPU 是否可用、CUDA 版本、诊断原因和安装建议
+    """
+    cuda_available = torch.cuda.is_available()
+    result = {
+        "device": str(DEVICE),
+        "gpu_available": cuda_available,
+        "gpu_name": None,
+        "cuda_available": cuda_available,
+        "cuda_version": None,
+        "reason": "",
+        "suggestion": "",
+    }
+
+    if cuda_available:
+        # CUDA 可用，获取 GPU 详细信息
+        result["gpu_name"] = torch.cuda.get_device_name(0)
+        result["cuda_version"] = torch.version.cuda
+        result["reason"] = f"已启用 GPU 加速（{result['gpu_name']}），CUDA {result['cuda_version']}"
+        result["suggestion"] = "当前已使用 GPU，无需额外配置。GPU 模式下图片处理分辨率为 512px，速度约为 CPU 的 5-10 倍。"
+    else:
+        # CUDA 不可用，尝试检测是否有物理 GPU
+        has_physical_gpu = False
+        gpu_model = None
+        try:
+            nvsmi = subprocess.run(
+                ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                capture_output=True, text=True, timeout=5
+            )
+            if nvsmi.returncode == 0 and nvsmi.stdout.strip():
+                has_physical_gpu = True
+                gpu_model = nvsmi.stdout.strip().split("\n")[0].strip()
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+
+        if has_physical_gpu and gpu_model:
+            # 有物理 GPU 但 PyTorch 无 CUDA 支持
+            result["gpu_name"] = gpu_model
+            result["reason"] = (
+                f"检测到 NVIDIA GPU（{gpu_model}），但 PyTorch 未编译 CUDA 支持，当前使用 CPU。"
+                "可能原因：安装的是 CPU 版 PyTorch，或 CUDA Toolkit 版本不匹配。"
+            )
+            result["suggestion"] = (
+                "1. 确认 GPU 型号（NVIDIA）并安装对应的 CUDA Toolkit（推荐 11.8 或 12.x）\n"
+                "2. 安装 PyTorch GPU 版本：pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118\n"
+                "3. 重启服务后即可启用 GPU 加速\n"
+                "4. GPU 模式下处理速度约为 CPU 的 5-10 倍，分辨率可提升至 512px"
+            )
+        else:
+            # 没有物理 GPU
+            result["reason"] = "未检测到 NVIDIA GPU，使用 CPU 运算。风格迁移速度较慢，单张图片预计 15-60 秒。"
+            result["suggestion"] = (
+                "1. 如果您有 NVIDIA GPU，请确认已安装最新显卡驱动\n"
+                "2. 安装 CUDA Toolkit（推荐 11.8 或 12.x）\n"
+                "3. 安装 PyTorch GPU 版本：pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118\n"
+                "4. 如果没有独立 GPU，可考虑使用 Google Colab 或其他云 GPU 环境"
+            )
+
+    return result
 
 
 @app.get("/styles")

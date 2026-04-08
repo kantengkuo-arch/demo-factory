@@ -20,6 +20,38 @@
   header h1 span { font-size: 2.4rem; }
   header p { color: #94a3b8; font-size: 0.95rem; }
   
+  /* 设备信息面板 */
+  .device-panel {
+    display: none; margin-bottom: 1.5rem; padding: 1rem 1.2rem;
+    border-radius: 10px; border: 1px solid #334155;
+    font-size: 0.88rem; line-height: 1.6;
+  }
+  .device-panel .device-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-weight: 600; margin-bottom: 0.5rem; font-size: 0.95rem;
+  }
+  .device-panel .device-reason { margin-bottom: 0.5rem; }
+  .device-panel .device-suggestion {
+    white-space: pre-line; font-size: 0.82rem; opacity: 0.85;
+    padding: 0.6rem 0.8rem; border-radius: 6px;
+    background: rgba(0,0,0,0.2); margin-top: 0.5rem;
+  }
+  /* GPU 已启用：绿色 */
+  .device-panel.gpu-active {
+    background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3);
+  }
+  .device-panel.gpu-active .device-header { color: #22c55e; }
+  /* 有 GPU 但未启用：黄色警告 */
+  .device-panel.gpu-warning {
+    background: rgba(234,179,8,0.08); border-color: rgba(234,179,8,0.3);
+  }
+  .device-panel.gpu-warning .device-header { color: #eab308; }
+  /* 无 GPU：灰色 */
+  .device-panel.cpu-only {
+    background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.2);
+  }
+  .device-panel.cpu-only .device-header { color: #94a3b8; }
+
   /* 状态指示器 */
   .status-bar {
     display: flex; align-items: center; justify-content: center;
@@ -216,6 +248,13 @@
     <p>上传照片，用 AI 将它变成油画、素描、水彩等艺术风格</p>
   </header>
 
+  <!-- 设备信息面板 -->
+  <div class="device-panel" id="devicePanel">
+    <div class="device-header" id="deviceHeader"></div>
+    <div class="device-reason" id="deviceReason"></div>
+    <div class="device-suggestion" id="deviceSuggestion" style="display:none;"></div>
+  </div>
+
   <!-- API 状态 -->
   <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
@@ -356,8 +395,47 @@ async function checkHealth() {
     const gpu = data.gpu_available ? '🟢 GPU' : '🟡 CPU';
     document.getElementById('deviceInfo').textContent = `${gpu} | 分辨率 ${data.img_size}px`;
     loadStyles();
+    loadDeviceInfo();
   } catch {
     document.getElementById('statusText').textContent = '❌ 后端未连接，请启动 python3 app.py';
+  }
+}
+
+// 加载设备详情面板
+async function loadDeviceInfo() {
+  try {
+    const r = await fetch(`${API}/device-info`);
+    const data = await r.json();
+    const panel = document.getElementById('devicePanel');
+    const header = document.getElementById('deviceHeader');
+    const reason = document.getElementById('deviceReason');
+    const suggestion = document.getElementById('deviceSuggestion');
+
+    if (data.gpu_available) {
+      // GPU 已启用 — 绿色
+      panel.className = 'device-panel gpu-active';
+      header.innerHTML = `🟢 GPU 加速已启用 — ${data.gpu_name || 'GPU'}`;
+      reason.textContent = data.reason;
+      suggestion.style.display = 'none';
+    } else if (data.gpu_name) {
+      // 有物理 GPU 但未启用 — 黄色警告
+      panel.className = 'device-panel gpu-warning';
+      header.innerHTML = `⚠️ 检测到 GPU 但未启用`;
+      reason.textContent = data.reason;
+      suggestion.textContent = data.suggestion;
+      suggestion.style.display = 'block';
+    } else {
+      // 无 GPU — 灰色
+      panel.className = 'device-panel cpu-only';
+      header.innerHTML = `💻 使用 CPU 运算`;
+      reason.textContent = data.reason;
+      suggestion.textContent = data.suggestion;
+      suggestion.style.display = 'block';
+    }
+
+    panel.style.display = 'block';
+  } catch(e) {
+    console.error('加载设备信息失败:', e);
   }
 }
 
