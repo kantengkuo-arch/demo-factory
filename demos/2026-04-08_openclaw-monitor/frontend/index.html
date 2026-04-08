@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐾 OpenClaw Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .navbar {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid #334155;
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .navbar h1 { font-size: 20px; }
+  .navbar h1 span { color: #38bdf8; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px; font-size: 12px;
+  }
+  .status-badge.connected { background: #064e3b; color: #34d399; }
+  .status-badge.disconnected { background: #7f1d1d; color: #fca5a5; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .status-dot.on { background: #34d399; animation: pulse 2s infinite; }
+  .status-dot.off { background: #ef4444; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .alert-banner {
+    display: none; background: #7f1d1d; border-bottom: 1px solid #ef4444;
+    padding: 8px 24px; font-size: 13px;
+  }
+  .alert-banner.visible { display: block; }
+  .alert-item { padding: 4px 0; display: flex; justify-content: space-between; }
+  .alert-item .time { color: #fca5a5; font-size: 12px; }
+
+  .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 24px; }
+  .panel {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 16px; overflow: hidden;
+  }
+  .panel-title {
+    font-size: 14px; font-weight: 600; color: #94a3b8;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title .emoji { font-size: 18px; }
+  .full-width { grid-column: 1 / -1; }
+
+  .topo-container { display: flex; align-items: center; justify-content: center; gap: 0; padding: 20px 0; flex-wrap: wrap; }
+  .agent-node { width: 130px; text-align: center; position: relative; }
+  .agent-circle {
+    width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; border: 3px solid; transition: all 0.3s ease;
+  }
+  .agent-circle.idle { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+  .agent-circle.working { border-color: #f59e0b; background: rgba(245,158,11,0.15); animation: workPulse 1.5s infinite; }
+  .agent-circle.error { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+  @keyframes workPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); } 50% { box-shadow: 0 0 0 12px rgba(245,158,11,0); } }
+  .agent-name { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+  .agent-role { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .agent-heartbeat { font-size: 10px; color: #475569; margin-top: 4px; }
+  .flow-arrow { font-size: 24px; color: #475569; margin: 0 4px; flex-shrink: 0; }
+  .flow-arrow.active { color: #38bdf8; animation: flowAnim 1s infinite; }
+  @keyframes flowAnim { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  .task-list { max-height: 250px; overflow-y: auto; }
+  .task-card {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; transition: border-color 0.2s;
+  }
+  .task-card:hover { border-color: #38bdf8; }
+  .task-title { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+  .task-meta { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+  .task-label {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: #334155; color: #94a3b8;
+  }
+  .task-label.scout { background: #1e3a5f; color: #38bdf8; }
+  .task-label.coder { background: #365314; color: #84cc16; }
+  .task-label.reviewer { background: #4c1d95; color: #a78bfa; }
+  .task-label.done { background: #064e3b; color: #34d399; }
+  .task-stage { font-size: 10px; color: #64748b; margin-left: auto; }
+
+  .gateway-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .gw-item { background: #0f172a; border-radius: 8px; padding: 12px; text-align: center; }
+  .gw-value { font-size: 22px; font-weight: 700; color: #38bdf8; }
+  .gw-label { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+  .chart-container { position: relative; height: 200px; }
+
+  .log-controls { display: flex; gap: 8px; margin-bottom: 8px; }
+  .log-controls select, .log-controls button {
+    background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .log-controls button:hover { border-color: #38bdf8; }
+  .log-area {
+    background: #020617; border: 1px solid #1e293b; border-radius: 8px;
+    padding: 10px; font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 11px; line-height: 1.6; max-height: 300px; overflow-y: auto;
+    color: #94a3b8; white-space: pre-wrap; word-break: break-all;
+  }
+  .log-line { padding: 1px 0; }
+  .log-line.error { color: #ef4444; }
+  .log-line.warn { color: #f59e0b; }
+
+  .metric-bar-container { margin-bottom: 10px; }
+  .metric-bar-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .metric-bar-track { height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+  .metric-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .metric-bar-fill.green { background: linear-gradient(90deg, #22c55e, #16a34a); }
+  .metric-bar-fill.yellow { background: linear-gradient(90deg, #f59e0b, #d97706); }
+  .metric-bar-fill.red { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+  @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <h1>🐾 <span>OpenClaw</span> Monitor</h1>
+  <div>
+    <span class="status-badge disconnected" id="connBadge">
+      <span class="status-dot off" id="connDot"></span>
+      <span id="connText">连接中...</span>
+    </span>
+  </div>
+</nav>
+
+<div class="alert-banner" id="alertBanner"></div>
+
+<div class="dashboard">
+
+  <div class="panel full-width">
+    <div class="panel-title"><span class="emoji">🤖</span> Agent 协作拓扑</div>
+    <div class="topo-container" id="topoContainer"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span class="emoji">🌐</span> Gateway 状态</div>
+    <div class="gateway-grid" id="gatewayGrid">
+      <div class="gw-item"><div class="gw-value" id="gwStatus">--</div><div class="gw-label">运行状态</div></div>
+      <div class="gw-item"><div class="gw-value" id="gwPid">--</div><div class="gw-label">PID</div></div>
+      <div class="gw-item"><div class="gw-value" id="gwUptime">--</div><div class="gw-label">运行时长</div></div>
+      <div class="gw-item"><div class="gw-value" id="gwSessions">--</div><div class="gw-label">会话数</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span class="emoji">📋</span> 任务流转</div>
+    <div class="task-list" id="taskList">
+      <div style="color:#475569; font-size:13px;">加载中...</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title"><span class="emoji">📊</span> 系统资源</div>
+    <div id="resourceBars">
+      <div class="metric-bar-container">
+        <div class="metric-bar-header"><span>🖥️ CPU</span><span id="cpuVal">0%</span></div>
+        <div class="metric-bar-track"><div class="metric-bar-fill green" id="cpuBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-bar-container">
+        <div class="metric-bar-header"><span>🧠 内存</span><span id="memVal">0%</span></div>
+        <div class="metric-bar-track"><div class="metric-bar-fill green" id="memBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-bar-container">
+        <div class="metric-bar-header"><span>💾 磁盘</span><span id="diskVal">0%</span></div>
+        <div class="metric-bar-track"><div class="metric-bar-fill green" id="diskBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel full-width">
+    <div class="panel-title"><span class="emoji">📈</span> 资源趋势（实时）</div>
+    <div class="chart-container" style="height:280px;"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <div class="panel full-width">
+    <div class="panel-title"><span class="emoji">📋</span> Gateway 日志</div>
+    <div class="log-controls">
+      <select id="logFilter">
+        <option value="">全部日志</option>
+        <option value="boss">Boss</option>
+        <option value="scout">Scout</option>
+        <option value="coder">Coder</option>
+        <option value="reviewer">Reviewer</option>
+        <option value="error">错误</option>
+      </select>
+      <button onclick="fetchLogs()">🔄 刷新</button>
+      <button onclick="toggleAutoScroll()">📌 自动滚动</button>
+    </div>
+    <div class="log-area" id="logArea">等待连接...</div>
+  </div>
+</div>
+
+<script>
+let ws = null;
+let autoScroll = true;
+let reconnectTimer = null;
+let trendChart = null;
+
+const AGENT_EMOJIS = { boss: '👑', scout: '🔭', coder: '💻', reviewer: '🔍' };
+const AGENT_ORDER = ['boss', 'scout', 'coder', 'reviewer'];
+
+function connect() {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${protocol}//${location.host}/ws`);
+  ws.onopen = () => {
+    updateConnStatus(true);
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  };
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'snapshot') updateDashboard(data);
+    } catch (e) { console.error('Parse error:', e); }
+  };
+  ws.onclose = () => {
+    updateConnStatus(false);
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+  ws.onerror = () => { ws.close(); };
+}
+
+function updateConnStatus(connected) {
+  const badge = document.getElementById('connBadge');
+  const dot = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  if (connected) {
+    badge.className = 'status-badge connected';
+    dot.className = 'status-dot on';
+    text.textContent = '已连接';
+  } else {
+    badge.className = 'status-badge disconnected';
+    dot.className = 'status-dot off';
+    text.textContent = '断开 - 重连中...';
+  }
+}
+
+function updateDashboard(data) {
+  updateAgentTopo(data.agents, data.tasks);
+  updateGateway(data.gateway);
+  updateTasks(data.tasks);
+  updateMetrics(data.metrics);
+  updateAlerts(data.alerts);
+  updateCharts(data.history);
+}
+
+function updateAgentTopo(agents, tasks) {
+  const container = document.getElementById('topoContainer');
+  let activeAgent = null;
+  if (tasks && tasks.length > 0) {
+    for (const t of tasks) {
+      if (t.stage && t.stage !== 'done' && t.stage !== 'unknown') {
+        activeAgent = t.stage;
+        break;
+      }
+    }
+  }
+  let html = '';
+  for (let i = 0; i < AGENT_ORDER.length; i++) {
+    const name = AGENT_ORDER[i];
+    const agent = agents.find(a => a.name === name) || { name, role: '', status: 'idle', heartbeat_ago: '--' };
+    html += `
+      <div class="agent-node">
+        <div class="agent-circle ${agent.status}">${AGENT_EMOJIS[name]}</div>
+        <div class="agent-name">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+        <div class="agent-role">${agent.role || ''}</div>
+        <div class="agent-heartbeat">❤️ ${agent.heartbeat_ago || '--'}</div>
+      </div>
+    `;
+    if (i < AGENT_ORDER.length - 1) {
+      const isActive = (activeAgent === AGENT_ORDER[i]);
+      html += `<div class="flow-arrow ${isActive ? 'active' : ''}">→</div>`;
+    }
+  }
+  html += `<div class="flow-arrow ${activeAgent === 'reviewer' ? 'active' : ''}" style="margin-left:8px;">↩️</div>`;
+  container.innerHTML = html;
+}
+
+function updateGateway(gw) {
+  document.getElementById('gwStatus').textContent = gw.running ? '✅ 运行中' : '❌ 停止';
+  document.getElementById('gwStatus').style.fontSize = '14px';
+  document.getElementById('gwPid').textContent = gw.pid || '--';
+  document.getElementById('gwUptime').textContent = gw.uptime || '--';
+  document.getElementById('gwSessions').textContent = gw.sessions || '--';
+}
+
+function updateTasks(tasks) {
+  const container = document.getElementById('taskList');
+  if (!tasks || tasks.length === 0) {
+    container.innerHTML = '<div style="color:#475569; font-size:13px;">暂无任务</div>';
+    return;
+  }
+  let html = '';
+  for (const task of tasks) {
+    const labelHtml = task.labels.map(l => {
+      const cls = ['scout','coder','reviewer','done'].includes(l) ? l : '';
+      return `<span class="task-label ${cls}">${l}</span>`;
+    }).join('');
+    const stageText = task.stage === 'done' ? '✅ 完成' :
+                      task.stage === 'unknown' ? '❓' :
+                      `🔄 ${task.stage}`;
+    html += `
+      <div class="task-card">
+        <div class="task-title">#${task.number} ${task.title}</div>
+        <div class="task-meta">${labelHtml}<span class="task-stage">${stageText}</span></div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
+function updateMetrics(metrics) {
+  const cpuPct = metrics.cpu.percent;
+  document.getElementById('cpuVal').textContent = `${cpuPct}% (${metrics.cpu.cores} 核)`;
+  const cpuBar = document.getElementById('cpuBar');
+  cpuBar.style.width = cpuPct + '%';
+  cpuBar.className = 'metric-bar-fill ' + barColor(cpuPct);
+
+  const memPct = metrics.memory.percent;
+  document.getElementById('memVal').textContent = `${memPct}% (${metrics.memory.used_gb}/${metrics.memory.total_gb} GB)`;
+  const memBar = document.getElementById('memBar');
+  memBar.style.width = memPct + '%';
+  memBar.className = 'metric-bar-fill ' + barColor(memPct);
+
+  const diskPct = metrics.disk.percent;
+  document.getElementById('diskVal').textContent = `${diskPct}% (${metrics.disk.used_gb}/${metrics.disk.total_gb} GB)`;
+  const diskBar = document.getElementById('diskBar');
+  diskBar.style.width = diskPct + '%';
+  diskBar.className = 'metric-bar-fill ' + barColor(diskPct);
+}
+
+function barColor(pct) {
+  if (pct >= 85) return 'red';
+  if (pct >= 60) return 'yellow';
+  return 'green';
+}
+
+function updateAlerts(alertList) {
+  const banner = document.getElementById('alertBanner');
+  if (!alertList || alertList.length === 0) {
+    banner.classList.remove('visible');
+    return;
+  }
+  banner.classList.add('visible');
+  banner.innerHTML = alertList.map(a =>
+    `<div class="alert-item"><span>${a.message}</span><span class="time">${a.time}</span></div>`
+  ).join('');
+}
+
+function initCharts() {
+  const trendCtx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'CPU %', data: [], borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        { label: '内存 %', data: [], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+        { label: '磁盘 %', data: [], borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 300 },
+      scales: {
+        x: { ticks: { color: '#475569', maxTicksLimit: 10, font: { size: 10 } }, grid: { color: '#1e293b' } },
+        y: { min: 0, max: 100, ticks: { color: '#475569', font: { size: 10 } }, grid: { color: '#1e293b' } }
+      },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }
+    }
+  });
+}
+
+function updateCharts(history) {
+  if (!trendChart || !history) return;
+  trendChart.data.labels = history.timestamps;
+  trendChart.data.datasets[0].data = history.cpu;
+  trendChart.data.datasets[1].data = history.memory;
+  trendChart.data.datasets[2].data = history.disk;
+  trendChart.update('none');
+}
+
+async function fetchLogs() {
+  const filter = document.getElementById('logFilter').value;
+  try {
+    const url = filter ? `/api/logs?lines=100&agent=${filter}` : '/api/logs?lines=100';
+    const res = await fetch(url);
+    const data = await res.json();
+    const logArea = document.getElementById('logArea');
+    if (data.logs && data.logs.length > 0) {
+      logArea.innerHTML = data.logs.map(line => {
+        let cls = '';
+        if (/error|Error|ERROR/i.test(line)) cls = 'error';
+        else if (/warn|WARN/i.test(line)) cls = 'warn';
+        return `<div class="log-line ${cls}">${escapeHtml(line)}</div>`;
+      }).join('');
+      if (autoScroll) logArea.scrollTop = logArea.scrollHeight;
+    } else {
+      logArea.innerHTML = '<div style="color:#475569;">暂无日志</div>';
+    }
+  } catch (e) {
+    document.getElementById('logArea').innerHTML = '<div class="log-line error">获取日志失败</div>';
+  }
+}
+
+function toggleAutoScroll() { autoScroll = !autoScroll; }
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+window.addEventListener('load', () => {
+  initCharts();
+  connect();
+  fetchLogs();
+  setInterval(fetchLogs, 10000);
+});
+</script>
+</body>
+</html>
