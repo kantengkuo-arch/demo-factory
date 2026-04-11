@@ -38,11 +38,11 @@ PREVIEW_DIR = STATIC_DIR / "previews"
 for d in [UPLOAD_DIR, RESULT_DIR, STATIC_DIR, PRESET_DIR, PREVIEW_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-# 图片处理尺寸（越大越慢，512 是一个平衡点）
-IMAGE_SIZE = 512
+# 图片处理尺寸（CPU 上用 256 保证速度，GPU 可提到 512）
+IMAGE_SIZE = 256 if not torch.cuda.is_available() else 512
 
-# 经典 NST 默认迭代次数
-NST_ITERATIONS = 300
+# 经典 NST 默认迭代次数（CPU 上用 50 次，GPU 可提到 300）
+NST_ITERATIONS = 50 if not torch.cuda.is_available() else 300
 
 # 预设风格定义
 PRESET_STYLES = {
@@ -118,22 +118,22 @@ def get_device() -> torch.device:
 
 def load_image(image_path: str, size: int = IMAGE_SIZE) -> torch.Tensor:
     """
-    加载图片并转换为模型输入格式的 tensor。
+    加载图片并转换为 [0,1] 范围的 tensor（不做 ImageNet 标准化，
+    标准化由模型内部的 Normalization 层统一处理）。
 
     Args:
         image_path: 图片文件路径
         size: 目标尺寸（短边）
 
     Returns:
-        形状为 (1, 3, H, W) 的 tensor
+        形状为 (1, 3, H, W) 的 tensor，值域 [0, 1]
     """
     image = Image.open(image_path).convert("RGB")
     transform = transforms.Compose([
         transforms.Resize(size),
         transforms.CenterCrop(size),
         transforms.ToTensor(),
-        # ImageNet 标准化
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        # 不在这里做 Normalize，由模型内部的 Normalization 层处理
     ])
     # 增加 batch 维度
     return transform(image).unsqueeze(0)
@@ -141,21 +141,16 @@ def load_image(image_path: str, size: int = IMAGE_SIZE) -> torch.Tensor:
 
 def tensor_to_image(tensor: torch.Tensor) -> Image.Image:
     """
-    将 tensor 转换回 PIL Image。
+    将 [0,1] 范围的 tensor 转换回 PIL Image。
 
     Args:
-        tensor: 形状为 (1, 3, H, W) 的 tensor
+        tensor: 形状为 (1, 3, H, W) 的 tensor，值域 [0, 1]
 
     Returns:
         PIL Image 对象
     """
     image = tensor.clone().detach().cpu().squeeze(0)
-    # 反标准化
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-    image = image * std + mean
     image = image.clamp(0, 1)
-    # 转换为 PIL Image
     to_pil = transforms.ToPILImage()
     return to_pil(image)
 
