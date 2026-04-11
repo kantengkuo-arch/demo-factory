@@ -3,9 +3,17 @@
     "slug": "{{SLUG}}",
     "direction": "{{DIRECTION}}",
     "tech_stack": [],
-    "status": "completed",
+    "status": "in-progress",
     "created_at": "{{CREATED_AT}}",
     "description": "{{DESCRIPTION}}",
     "has_frontend": true,
-    "has_backend": true
+    "has_backend": true,
+    "score": null,
+    "score_detail": {
+        "ui": null,
+        "functionality": null,
+        "code_quality": null
+    },
+    "eval_comment": null,
+    "xhs_draft": null
 }
