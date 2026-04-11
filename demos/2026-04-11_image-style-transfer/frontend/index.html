@@ -570,15 +570,15 @@ async function pollTaskStatus(taskId) {
       bar.style.width = '100%';
       percent.textContent = '100%';
       label.textContent = '转换完成！';
-      state.resultUrl = status.result_url;
+      state.resultUrl = API_BASE + status.result_url;
 
-      document.getElementById('resultDisplay').innerHTML = '<img src="' + status.result_url + '" alt="风格转换结果">';
+      document.getElementById('resultDisplay').innerHTML = '<img src="' + API_BASE + status.result_url + '" alt="风格转换结果">';
       document.getElementById('resultActions').classList.remove('hidden');
       document.getElementById('progressSection').classList.add('hidden');
 
       if (state.contentPreviewUrl) {
         document.getElementById('compareOriginal').src = state.contentPreviewUrl;
-        document.getElementById('compareResult').src = status.result_url;
+        document.getElementById('compareResult').src = API_BASE + status.result_url;
       }
       showToast('🎉 风格转换完成！', 'success');
       return;
