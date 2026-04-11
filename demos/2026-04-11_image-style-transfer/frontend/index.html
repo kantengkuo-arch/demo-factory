@@ -15,7 +15,6 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 a{color:var(--primary);text-decoration:none}
 
-/* Header */
 .header{padding:24px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;background:rgba(15,23,42,.85)}
 .header-left{display:flex;align-items:center;gap:14px}
 .logo{font-size:28px;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -25,29 +24,25 @@ a{color:var(--primary);text-decoration:none}
 .status-dot.online{background:var(--success);box-shadow:0 0 8px var(--success)}
 .status-dot.offline{background:var(--error);box-shadow:0 0 8px var(--error)}
 
-/* Layout */
 .main{max-width:1400px;margin:0 auto;padding:32px}
 .workflow{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px}
 
-/* Cards */
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;transition:border-color .2s}
 .card:hover{border-color:rgba(139,92,246,.3)}
 .card-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:10px}
 .card-title .step{background:var(--primary);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 
-/* Upload Zone */
 .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .upload-zone:hover,.upload-zone.drag-over{border-color:var(--primary);background:var(--primary-dim)}
 .upload-zone.has-image{border-style:solid;padding:8px}
 .upload-zone .icon{font-size:48px;margin-bottom:12px;opacity:.6}
 .upload-zone .label{font-size:14px;color:var(--text-sec);line-height:1.6}
 .upload-zone .label strong{color:var(--primary)}
-.upload-zone input{display:none}
+.upload-zone input[type="file"]{display:none}
 .upload-zone img{max-width:100%;max-height:280px;border-radius:8px;object-fit:contain}
 .upload-zone .remove-btn{position:absolute;top:12px;right:12px;background:rgba(239,68,68,.85);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
 .upload-zone:hover .remove-btn{opacity:1}
 
-/* Style Selection */
 .style-tabs{display:flex;gap:4px;background:rgba(15,23,42,.5);border-radius:10px;padding:4px;margin-bottom:16px}
 .style-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-sec);transition:all .2s;border:none;background:none}
 .style-tab.active{background:var(--primary);color:#fff}
@@ -64,8 +59,8 @@ a{color:var(--primary);text-decoration:none}
 .upload-style-zone:hover,.upload-style-zone.drag-over{border-color:var(--primary);background:var(--primary-dim)}
 .upload-style-zone.has-image{border-style:solid;padding:8px;position:relative}
 .upload-style-zone img{max-width:100%;max-height:200px;border-radius:8px;object-fit:contain}
+.upload-style-zone .remove-btn{position:absolute;top:8px;right:8px;background:rgba(239,68,68,.85);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 
-/* Controls */
 .controls-section{margin-top:16px}
 .control-group{margin-bottom:20px}
 .control-label{font-size:13px;font-weight:600;color:var(--text-sec);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
@@ -79,7 +74,6 @@ a{color:var(--primary);text-decoration:none}
 input[type="range"]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--border);outline:none}
 input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--primary);cursor:pointer;box-shadow:0 0 8px rgba(139,92,246,.4)}
 
-/* Generate Button */
 .generate-btn{width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;font-size:16px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;position:relative;overflow:hidden}
 .generate-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(139,92,246,.4)}
 .generate-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -87,8 +81,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 .generate-btn.loading .spinner{display:block}
 .generate-btn.loading .btn-text{display:none}
 
-/* Result Area */
-.result-section{margin-top:0}
 .result-card{min-height:400px;display:flex;flex-direction:column}
 .progress-bar-wrap{background:var(--bg);border-radius:8px;height:12px;overflow:hidden;margin:12px 0}
 .progress-bar{height:100%;background:linear-gradient(90deg,#8b5cf6,#ec4899);border-radius:8px;transition:width .4s ease;width:0}
@@ -104,19 +96,16 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 .action-btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
 .action-btn.primary:hover{background:var(--primary-hover)}
 
-/* Compare View */
 .compare-view{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 .compare-item{text-align:center}
 .compare-item img{width:100%;border-radius:10px;border:1px solid var(--border)}
 .compare-item .compare-label{font-size:12px;color:var(--text-sec);margin-top:8px;font-weight:600}
 
-/* Skeleton */
 .skeleton{background:linear-gradient(90deg,var(--border) 25%,rgba(51,65,85,.5) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fadeIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
 
-/* Toast */
 .toast-container{position:fixed;top:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:10px}
 .toast{padding:14px 20px;border-radius:10px;font-size:14px;font-weight:500;animation:slideIn .3s ease;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:400px}
 .toast.success{background:#065f46;color:#6ee7b7;border:1px solid #10b981}
@@ -124,10 +113,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 .toast.info{background:#1e3a5f;color:#93c5fd;border:1px solid #3b82f6}
 @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
 
-/* Hidden */
 .hidden{display:none!important}
 
-/* Responsive */
 @media(max-width:900px){
   .workflow{grid-template-columns:1fr}
   .presets-grid{grid-template-columns:repeat(3,1fr)}
@@ -143,136 +130,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div class="logo">
-    <svg viewBox="0 0 36 36" fill="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="36" y2="36"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><rect width="36" height="36" rx="8" fill="url(#g1)"/><path d="M10 18c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="18" cy="14" r="2" fill="#fff"/><path d="M14 22l4-6 3 4 3-2" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <div>
-      <h1>StyleForge</h1>
-      <span>AI 驱动的图片风格转换工具</span>
-    </div>
-  </div>
-  <div class="status-badge">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusText">检测中...</span>
-  </div>
-</div>
-
-<!-- App -->
-<div class="app">
-  <!-- Step 1 & 2 -->
-  <div class="workflow">
-    <!-- Left: Upload -->
-    <div class="card">
-      <div class="card-title"><span class="step">1</span>上传图片</div>
-      <div class="upload-row">
-        <div>
-          <div class="upload-zone" id="contentZone" data-type="content">
-            <button class="remove-btn" onclick="removeImage('content',event)">&times;</button>
-            <div class="icon">🖼️</div>
-            <div class="label">内容图片</div>
-            <div class="hint">拖拽或点击上传</div>
-          </div>
-          <input type="file" id="contentInput" accept="image/*" hidden>
-        </div>
-        <div>
-          <div class="upload-zone" id="styleZone" data-type="style">
-            <button class="remove-btn" onclick="removeImage('style',event)">&times;</button>
-            <div class="icon">🎨</div>
-            <div class="label">风格图片</div>
-            <div class="hint">拖拽或点击上传</div>
-          </div>
-          <input type="file" id="styleInput" accept="image/*" hidden>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right: Style & Controls -->
-    <div class="card">
-      <div class="card-title"><span class="step">2</span>选择风格与参数</div>
-
-      <div class="style-tabs">
-        <button class="style-tab active" onclick="switchStyleSource('preset')">预设风格</button>
-        <button class="style-tab" onclick="switchStyleSource('upload')">上传风格图</button>
-      </div>
-
-      <div id="presetSection">
-        <div class="presets-grid" id="presetsGrid">
-          <!-- Filled by JS -->
-        </div>
-      </div>
-
-      <div id="uploadStyleHint" style="display:none;padding:12px;text-align:center;color:var(--text-sec);font-size:13px">
-        ← 请在左侧上传风格图片
-      </div>
-
-      <div class="controls" style="margin-top:20px">
-        <div class="control-group">
-          <label>转换算法</label>
-          <select class="algo-select" id="algoSelect">
-            <option value="classic_nst">经典 Neural Style Transfer (VGG19)</option>
-            <option value="stable_diffusion">Stable Diffusion 风格转换</option>
-          </select>
-        </div>
-        <div class="control-group">
-          <label>风格强度</label>
-          <div class="slider-wrap">
-            <input type="range" id="strengthSlider" min="10" max="100" value="80" oninput="updateStrength()">
-            <span class="slider-val" id="strengthVal">0.8</span>
-          </div>
-        </div>
-      </div>
-
-      <button class="transform-btn" id="transformBtn" onclick="startTransform()" disabled>
-        <span class="spinner"></span>
-        <span class="btn-text">✨ 开始风格转换</span>
-      </button>
-
-      <div class="progress-section" id="progressSection">
-        <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
-        <div class="progress-text">
-          <span id="progressLabel">处理中...</span>
-          <span id="progressPct">0%</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Result -->
-  <div class="result-section" id="resultSection">
-    <div class="card">
-      <div class="card-title"><span class="step">3</span>转换结果</div>
-      <div class="result-compare">
-        <div class="result-img-wrap">
-          <span class="img-label">原图</span>
-          <img id="resultOriginal" src="" alt="原图" onclick="openLightbox(this.src)">
-        </div>
-        <div class="result-img-wrap">
-          <span class="img-label">风格化</span>
-          <img id="resultStyled" src="" alt="结果" onclick="openLightbox(this.src)">
-        </div>
-      </div>
-      <div class="result-actions">
-        <button class="download-btn" onclick="downloadResult()">⬇️ 下载结果</button>
-        <button onclick="resetAll()">🔄 重新开始</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Lightbox -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <img id="lightboxImg" src="" alt="">
-</div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
-
-<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Header -->
 <header class="header">
   <div class="header-left">
     <div>
@@ -286,12 +145,9 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
   </div>
 </header>
 
-<!-- Main Content -->
 <main class="main">
   <div class="workflow">
-    <!-- Left Column: Upload & Style -->
     <div>
-      <!-- Step 1: Upload Content Image -->
       <div class="card" style="margin-bottom:28px">
         <div class="card-title"><span class="step">1</span>上传内容图片</div>
         <div class="upload-zone" id="contentUpload">
@@ -301,7 +157,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
         </div>
       </div>
 
-      <!-- Step 2: Choose Style -->
       <div class="card">
         <div class="card-title"><span class="step">2</span>选择风格</div>
         <div class="style-tabs">
@@ -309,9 +164,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
           <button class="style-tab" data-tab="upload" onclick="switchStyleTab('upload')">📁 上传风格图</button>
         </div>
         <div id="presetPanel">
-          <div class="presets-grid" id="presetsGrid">
-            <!-- Filled by JS -->
-          </div>
+          <div class="presets-grid" id="presetsGrid"></div>
         </div>
         <div id="uploadPanel" class="hidden">
           <div class="upload-style-zone" id="styleUpload">
@@ -323,9 +176,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
       </div>
     </div>
 
-    <!-- Right Column: Settings & Generate -->
     <div>
-      <!-- Step 3: Configure -->
       <div class="card" style="margin-bottom:28px">
         <div class="card-title"><span class="step">3</span>调整参数</div>
         <div class="controls-section">
@@ -333,22 +184,17 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
             <div class="control-label">算法选择</div>
             <div class="algo-select">
               <button class="algo-btn active" data-algo="classic_nst" onclick="selectAlgo('classic_nst')">
-                <div class="algo-icon">🧠</div>
-                经典 NST
+                <div class="algo-icon">🧠</div>经典 NST
                 <div class="algo-desc">VGG19 神经风格迁移<br>速度快，效果稳定</div>
               </button>
               <button class="algo-btn" data-algo="stable_diffusion" onclick="selectAlgo('stable_diffusion')">
-                <div class="algo-icon">🌀</div>
-                Stable Diffusion
+                <div class="algo-icon">🌀</div>Stable Diffusion
                 <div class="algo-desc">扩散模型风格转换<br>效果更强，耗时较长</div>
               </button>
             </div>
           </div>
           <div class="control-group">
-            <div class="control-label">
-              风格强度
-              <span class="value" id="strengthValue">0.8</span>
-            </div>
+            <div class="control-label">风格强度 <span class="value" id="strengthValue">0.8</span></div>
             <input type="range" id="strengthSlider" min="0.1" max="1" step="0.05" value="0.8" oninput="updateStrength(this.value)">
           </div>
         </div>
@@ -358,7 +204,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
         </button>
       </div>
 
-      <!-- Step 4: Result -->
       <div class="card result-card">
         <div class="card-title"><span class="step">4</span>转换结果</div>
         <div id="progressSection" class="hidden">
@@ -366,15 +211,10 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
             <span id="progressLabel">正在转换...</span>
             <span id="progressPercent">0%</span>
           </div>
-          <div class="progress-bar-wrap">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
         </div>
         <div class="result-display" id="resultDisplay">
-          <div class="placeholder">
-            <div class="icon">🖼️</div>
-            <p>转换结果将在这里显示</p>
-          </div>
+          <div class="placeholder"><div class="icon">🖼️</div><p>转换结果将在这里显示</p></div>
         </div>
         <div class="result-actions hidden" id="resultActions">
           <button class="action-btn" onclick="toggleCompare()">🔄 对比查看</button>
@@ -384,8 +224,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
     </div>
   </div>
 
-  <!-- Compare View -->
-  <div class="card hidden" id="compareCard" style="margin-top:0">
+  <div class="card hidden" id="compareCard">
     <div class="card-title">📊 前后对比</div>
     <div class="compare-view">
       <div class="compare-item">
@@ -399,395 +238,11 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
     </div>
   </div>
 </main>
-<script>
-// ============ CONFIG ============
-const API_BASE = 'http://localhost:8000';
-const MOCK_MODE = true;
-const POLL_INTERVAL = 1500;
-
-// ============ STATE ============
-let state = {
-  contentFile: null,
-  styleFile: null,
-  contentId: null,
-  styleId: null,
-  styleSource: 'preset',
-  selectedPreset: null,
-  algorithm: 'classic_nst',
-  strength: 0.8,
-  taskId: null,
-  resultUrl: null,
-  presets: []
-};
-
-// ============ MOCK DATA ============
-const MOCK_PRESETS = [
-  { id: 'vangogh', name: '梵高星夜', preview_url: '', emoji: '🌙' },
-  { id: 'picasso', name: '毕加索', preview_url: '', emoji: '🎭' },
-  { id: 'chinese_ink', name: '中国水墨', preview_url: '', emoji: '🏔️' },
-  { id: 'monet', name: '莫奈印象', preview_url: '', emoji: '🌸' },
-  { id: 'ukiyoe', name: '浮世绘', preview_url: '', emoji: '🌊' },
-  { id: 'pop_art', name: '波普艺术', preview_url: '', emoji: '🎪' }
-];
-
-function mockDelay(ms) { return new Promise(r => setTimeout(r, ms || 300 + Math.random() * 400)); }
-function mockUUID() { return 'mock-' + Math.random().toString(36).substr(2, 9); }
-
-// ============ API ============
-async function apiHealthCheck() {
-  if (MOCK_MODE) { await mockDelay(200); return { status: 'healthy' }; }
-  try {
-    const r = await fetch(`${API_BASE}/health`);
-    return await r.json();
-  } catch(e) { throw e; }
-}
-
-async function apiGetPresets() {
-  if (MOCK_MODE) { await mockDelay(); return { presets: MOCK_PRESETS, status: 'success' }; }
-  try {
-    const r = await fetch(`${API_BASE}/api/presets`);
-    return await r.json();
-  } catch(e) { throw e; }
-}
-
-async function apiUpload(contentFile, styleFile) {
-  if (MOCK_MODE) {
-    await mockDelay(600);
-    return { content_id: mockUUID(), style_id: styleFile ? mockUUID() : null, status: 'success' };
-  }
-  try {
-    const fd = new FormData();
-    fd.append('content_image', contentFile);
-    if (styleFile) fd.append('style_image', styleFile);
-    const r = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
-    if (!r.ok) throw new Error(`上传失败: ${r.status}`);
-    return await r.json();
-  } catch(e) { throw e; }
-}
-
-async function apiStyleTransfer(params) {
-  if (MOCK_MODE) {
-    await mockDelay(400);
-    return { task_id: mockUUID(), status: 'success' };
-  }
-  try {
-    const r = await fetch(`${API_BASE}/api/style-transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
-    });
-    if (!r.ok) throw new Error(`转换请求失败: ${r.status}`);
-    return await r.json();
-  } catch(e) { throw e; }
-}
-
-async function apiTaskStatus(taskId) {
-  if (MOCK_MODE) {
-    // Simulate progress
-    if (!window._mockProgress) window._mockProgress = {};
-    if (!window._mockProgress[taskId]) window._mockProgress[taskId] = 0;
-    window._mockProgress[taskId] += 15 + Math.random() * 20;
-    if (window._mockProgress[taskId] >= 100) {
-      window._mockProgress[taskId] = 100;
-      return { status: 'completed', progress: 100, result_url: createMockResultImage() };
-    }
-    await mockDelay(300);
-    return { status: 'processing', progress: Math.min(Math.floor(window._mockProgress[taskId]), 95) };
-  }
-  try {
-    const r = await fetch(`${API_BASE}/api/task-status/${taskId}`);
-    if (!r.ok) throw new Error(`查询状态失败: ${r.status}`);
-    return await r.json();
-  } catch(e) { throw e; }
-}
-
-function createMockResultImage() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 400; canvas.height = 300;
-  const ctx = canvas.getContext('2d');
-  // gradient background
-  const grad = ctx.createLinearGradient(0, 0, 400, 300);
-  const colors = {
-    vangogh: ['#1a237e','#f9a825','#0d47a1'],
-    picasso: ['#b71c1c','#1565c0','#f9a825'],
-    chinese_ink: ['#263238','#607d8b','#eceff1'],
-    monet: ['#e8f5e9','#81c784','#f8bbd0'],
-    ukiyoe: ['#0d47a1','#e3f2fd','#b71c1c'],
-    pop_art: ['#f50057','#ffeb3b','#00e5ff']
-  };
-  const preset = state.selectedPreset || 'vangogh';
-  const c = colors[preset] || colors.vangogh;
-  grad.addColorStop(0, c[0]); grad.addColorStop(0.5, c[1]); grad.addColorStop(1, c[2] || c[0]);
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 400, 300);
-  ctx.fillStyle = 'rgba(255,255,255,0.15)';
-  for (let i = 0; i < 20; i++) {
-    ctx.beginPath();
-    ctx.arc(Math.random()*400, Math.random()*300, Math.random()*30+5, 0, Math.PI*2);
-    ctx.fill();
-  }
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('风格转换结果 (Mock)', 200, 155);
-  return canvas.toDataURL('image/png');
-}
-
-// ============ UI LOGIC ============
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-
-// Health check
-async function checkHealth() {
-  const dot = $('#statusDot'), txt = $('#statusText');
-  try {
-    const data = await apiHealthCheck();
-    if (data.status === 'healthy') {
-      dot.className = 'status-dot online'; txt.textContent = 'API 在线';
-    } else { throw new Error('unhealthy'); }
-  } catch(e) {
-    dot.className = 'status-dot offline';
-    txt.textContent = MOCK_MODE ? 'Mock 模式' : 'API 离线';
-    if (MOCK_MODE) dot.className = 'status-dot online';
-  }
-}
-
-// Load presets
-async function loadPresets() {
-  try {
-    const data = await apiGetPresets();
-    state.presets = data.presets || [];
-    renderPresets();
-  } catch(e) {
-    showToast('加载预设风格失败', 'error');
-  }
-}
-
-function renderPresets() {
-  const grid = $('#presetsGrid');
-  grid.innerHTML = state.presets.map(p => `
-    <div class="preset-card ${state.selectedPreset===p.id?'selected':''}" onclick="selectPreset('${p.id}')">
-      <div class="preview">${p.emoji || '🎨'}</div>
-      <div class="name">${p.name}</div>
-    </div>
-  `).join('');
-}
-
-function selectPreset(id) {
-  state.selectedPreset = state.selectedPreset === id ? null : id;
-  renderPresets();
-  updateTransformBtn();
-}
-
-function switchStyleSource(src) {
-  state.styleSource = src;
-  $$('.style-tab').forEach(t => t.classList.remove('active'));
-  if (src === 'preset') {
-    $$('.style-tab')[0].classList.add('active');
-    $('#presetSection').style.display = '';
-    $('#uploadStyleHint').style.display = 'none';
-  } else {
-    $$('.style-tab')[1].classList.add('active');
-    $('#presetSection').style.display = 'none';
-    $('#uploadStyleHint').style.display = '';
-  }
-  updateTransformBtn();
-}
-
-// Upload zones
-function setupUploadZone(zoneId, inputId, type) {
-  const zone = $(`#${zoneId}`), input = $(`#${inputId}`);
-  zone.addEventListener('click', e => { if (e.target.classList.contains('remove-btn')) return; input.click(); });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0], type); });
-  input.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0], type); });
-}
-
-function handleFile(file, type) {
-  if (!file || !file.type.startsWith('image/')) { showToast('请选择图片文件', 'error'); return; }
-  if (file.size > 20 * 1024 * 1024) { showToast('图片不能超过 20MB', 'error'); return; }
-  if (type === 'content') state.contentFile = file;
-  else state.styleFile = file;
-  previewFile(file, type);
-  updateTransformBtn();
-}
-
-function previewFile(file, type) {
-  const zone = type === 'content' ? $('#contentZone') : $('#styleZone');
-  const reader = new FileReader();
-  reader.onload = e => {
-    zone.innerHTML = `<button class="remove-btn" onclick="removeImage('${type}',event)">&times;</button><img src="${e.target.result}" alt="${type}">`;
-    zone.classList.add('has-image');
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeImage(type, e) {
-  e.stopPropagation();
-  const zone = type === 'content' ? $('#contentZone') : $('#styleZone');
-  const icon = type === 'content' ? '🖼️' : '🎨';
-  const label = type === 'content' ? '内容图片' : '风格图片';
-  if (type === 'content') { state.contentFile = null; state.contentId = null; }
-  else { state.styleFile = null; state.styleId = null; }
-  zone.innerHTML = `<button class="remove-btn" onclick="removeImage('${type}',event)">&times;</button><div class="icon">${icon}</div><div class="label">${label}</div><div class="hint">拖拽或点击上传</div>`;
-  zone.classList.remove('has-image');
-  updateTransformBtn();
-}
-
-function updateStrength() {
-  const v = $('#strengthSlider').value / 100;
-  state.strength = v;
-  $('#strengthVal').textContent = v.toFixed(1);
-}
-
-function updateTransformBtn() {
-  const btn = $('#transformBtn');
-  const hasContent = !!state.contentFile;
-  const hasStyle = state.styleSource === 'preset' ? !!state.selectedPreset : !!state.styleFile;
-  btn.disabled = !(hasContent && hasStyle);
-}
-
-// ============ TRANSFORM FLOW ============
-async function startTransform() {
-  const btn = $('#transformBtn');
-  btn.classList.add('loading');
-  btn.querySelector('.btn-text').textContent = '上传中...';
-  btn.disabled = true;
-  $('#resultSection').classList.remove('active');
-
-  try {
-    // 1. Upload
-    const uploadData = await apiUpload(state.contentFile, state.styleSource === 'upload' ? state.styleFile : null);
-    state.contentId = uploadData.content_id;
-    if (uploadData.style_id) state.styleId = uploadData.style_id;
-
-    // 2. Start transfer
-    btn.querySelector('.btn-text').textContent = '正在转换...';
-    const transferParams = {
-      content_id: state.contentId,
-      style_source: state.styleSource,
-      algorithm: $('#algoSelect').value,
-      strength: state.strength
-    };
-    if (state.styleSource === 'upload') transferParams.style_id = state.styleId;
-    else transferParams.preset_style = state.selectedPreset;
-
-    const transferData = await apiStyleTransfer(transferParams);
-    state.taskId = transferData.task_id;
-
-    // 3. Poll progress
-    showProgress();
-    await pollTaskStatus();
-
-  } catch(e) {
-    showToast(e.message || '转换失败，请重试', 'error');
-    resetBtn();
-  }
-}
-
-function showProgress() {
-  $('#progressSection').classList.add('active');
-  $('#progressBar').style.width = '0%';
-  $('#progressPct').textContent = '0%';
-  $('#progressLabel').textContent = '处理中...';
-}
-
-async function pollTaskStatus() {
-  try {
-    const data = await apiTaskStatus(state.taskId);
-    if (data.status === 'completed') {
-      $('#progressBar').style.width = '100%';
-      $('#progressPct').textContent = '100%';
-      $('#progressLabel').textContent = '✅ 完成！';
-      state.resultUrl = data.result_url;
-      setTimeout(() => showResult(), 500);
-      return;
-    }
-    if (data.status === 'failed') {
-      showToast(data.error_message || '转换失败', 'error');
-      resetBtn();
-      return;
-    }
-    // processing
-    const pct = data.progress || 0;
-    $('#progressBar').style.width = pct + '%';
-    $('#progressPct').textContent = pct + '%';
-    setTimeout(() => pollTaskStatus(), POLL_INTERVAL);
-  } catch(e) {
-    showToast('查询进度失败: ' + e.message, 'error');
-    resetBtn();
-  }
-}
-
-function showResult() {
-  resetBtn();
-  // Show original
-  const contentReader = new FileReader();
-  contentReader.onload = e => { $('#resultOriginal').src = e.target.result; };
-  contentReader.readAsDataURL(state.contentFile);
-  // Show result
-  $('#resultStyled').src = state.resultUrl;
-  $('#resultSection').classList.add('active');
-  $('#resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function resetBtn() {
-  const btn = $('#transformBtn');
-  btn.classList.remove('loading');
-  btn.querySelector('.btn-text').textContent = '✨ 开始风格转换';
-  updateTransformBtn();
-  setTimeout(() => { $('#progressSection').classList.remove('active'); }, 800);
-}
-
-function downloadResult() {
-  if (!state.resultUrl) return;
-  const a = document.createElement('a');
-  a.href = state.resultUrl;
-  a.download = `styleforge_${Date.now()}.png`;
-  a.click();
-}
-
-function resetAll() {
-  state.resultUrl = null; state.taskId = null;
-  window._mockProgress = {};
-  $('#resultSection').classList.remove('active');
-  removeImage('content', new Event('click'));
-  removeImage('style', new Event('click'));
-  state.selectedPreset = null;
-  renderPresets();
-  updateTransformBtn();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Lightbox
-function openLightbox(src) { $('#lightboxImg').src = src; $('#lightbox').classList.add('active'); }
-function closeLightbox() { $('#lightbox').classList.remove('active'); }
-
-// Toast
-function showToast(msg, type) {
-  const t = $('#toast');
-  t.textContent = msg; t.className = `toast show ${type||'info'}`;
-  clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-// ============ INIT ============
-document.addEventListener('DOMContentLoaded', () => {
-  setupUploadZone('contentZone', 'contentInput', 'content');
-  setupUploadZone('styleZone', 'styleInput', 'style');
-  checkHealth();
-  loadPresets();
-  setInterval(checkHealth, 30000);
-  updateStrength();
-  // keyboard
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
-});
-</script>
-</body>
-</html>
 
 <script>
 // ============== CONFIG ==============
 const API_BASE = 'http://localhost:8000';
-const MOCK_MODE = true;
+let MOCK_MODE = false; // Auto-detected on init
 
 // ============== STATE ==============
 const state = {
@@ -795,7 +250,7 @@ const state = {
   contentPreviewUrl: null,
   styleFile: null,
   stylePreviewUrl: null,
-  styleSource: 'preset',   // 'preset' or 'upload'
+  styleSource: 'preset',
   presetStyle: 'vangogh',
   algorithm: 'classic_nst',
   strength: 0.8,
@@ -807,13 +262,15 @@ const state = {
 
 // ============== MOCK DATA ==============
 const MOCK_PRESETS = [
-  { id: 'vangogh',     name: '梵高星夜',   emoji: '🌌' },
-  { id: 'picasso',     name: '毕加索',     emoji: '🎭' },
-  { id: 'chinese_ink', name: '中国水墨',   emoji: '🏔️' },
-  { id: 'monet',       name: '莫奈睡莲',   emoji: '🌸' },
-  { id: 'pop_art',     name: '波普艺术',   emoji: '🎯' },
-  { id: 'ukiyoe',      name: '浮世绘',     emoji: '🌊' }
+  { id: 'vangogh',     name: '梵高星夜',  emoji: '🌌' },
+  { id: 'picasso',     name: '毕加索',    emoji: '🎭' },
+  { id: 'chinese_ink', name: '中国水墨',  emoji: '🏔️' },
+  { id: 'monet',       name: '莫奈睡莲',  emoji: '🌸' },
+  { id: 'pop_art',     name: '波普艺术',  emoji: '🎯' },
+  { id: 'ukiyoe',      name: '浮世绘',    emoji: '🌊' }
 ];
+
+let mockProgress = 0;
 
 function mockUpload() {
   return new Promise(r => setTimeout(() => r({
@@ -830,24 +287,17 @@ function mockStyleTransfer() {
   }), 500));
 }
 
-let mockProgress = 0;
-function mockTaskStatus(taskId) {
+function mockTaskStatus() {
   mockProgress += Math.random() * 25 + 10;
   if (mockProgress >= 100) {
     mockProgress = 100;
     return Promise.resolve({
-      status: 'completed',
-      progress: 100,
-      result_url: state.contentPreviewUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="%238b5cf6" width="400" height="400"/><text x="50%" y="50%" fill="white" text-anchor="middle" dy=".3em" font-size="24">Mock Result</text></svg>',
+      status: 'completed', progress: 100,
+      result_url: state.contentPreviewUrl || 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="#8b5cf6" width="400" height="400"/><text x="50%" y="50%" fill="white" text-anchor="middle" dy=".3em" font-size="24">Mock Result</text></svg>'),
       error_message: null
     });
   }
-  return Promise.resolve({
-    status: 'processing',
-    progress: Math.min(Math.floor(mockProgress), 99),
-    result_url: null,
-    error_message: null
-  });
+  return Promise.resolve({ status: 'processing', progress: Math.min(Math.floor(mockProgress), 99), result_url: null, error_message: null });
 }
 
 function mockPresets() {
@@ -857,118 +307,94 @@ function mockPresets() {
 // ============== API CALLS ==============
 async function apiHealthCheck() {
   if (MOCK_MODE) return { status: 'healthy' };
-  try {
-    const res = await fetch(`${API_BASE}/health`);
-    return await res.json();
-  } catch (e) {
-    throw e;
-  }
+  const res = await fetch(API_BASE + '/health');
+  return await res.json();
 }
 
 async function apiUpload(contentFile, styleFile) {
   if (MOCK_MODE) return mockUpload();
-  try {
-    const fd = new FormData();
-    fd.append('content_image', contentFile);
-    if (styleFile) fd.append('style_image', styleFile);
-    const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
-    if (!res.ok) throw new Error(`上传失败: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    showToast(e.message, 'error');
-    throw e;
-  }
+  const fd = new FormData();
+  fd.append('content_image', contentFile);
+  if (styleFile) fd.append('style_image', styleFile);
+  const res = await fetch(API_BASE + '/api/upload', { method: 'POST', body: fd });
+  if (!res.ok) throw new Error('上传失败: ' + res.status);
+  return await res.json();
 }
 
 async function apiStyleTransfer(params) {
   if (MOCK_MODE) return mockStyleTransfer();
-  try {
-    const res = await fetch(`${API_BASE}/api/style-transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params)
-    });
-    if (!res.ok) throw new Error(`转换请求失败: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    showToast(e.message, 'error');
-    throw e;
-  }
+  const res = await fetch(API_BASE + '/api/style-transfer', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params)
+  });
+  if (!res.ok) throw new Error('转换请求失败: ' + res.status);
+  return await res.json();
 }
 
 async function apiTaskStatus(taskId) {
-  if (MOCK_MODE) return mockTaskStatus(taskId);
-  try {
-    const res = await fetch(`${API_BASE}/api/task-status/${taskId}`);
-    if (!res.ok) throw new Error(`查询进度失败: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    showToast(e.message, 'error');
-    throw e;
-  }
+  if (MOCK_MODE) return mockTaskStatus();
+  const res = await fetch(API_BASE + '/api/task-status/' + taskId);
+  if (!res.ok) throw new Error('查询进度失败: ' + res.status);
+  return await res.json();
 }
 
 async function apiPresets() {
   if (MOCK_MODE) return mockPresets();
-  try {
-    const res = await fetch(`${API_BASE}/api/presets`);
-    if (!res.ok) throw new Error(`获取预设失败: ${res.status}`);
-    return await res.json();
-  } catch (e) {
-    showToast(e.message, 'error');
-    throw e;
-  }
+  const res = await fetch(API_BASE + '/api/presets');
+  if (!res.ok) throw new Error('获取预设失败: ' + res.status);
+  return await res.json();
 }
 
-// ============== UI LOGIC ==============
-function showToast(msg, type = 'info') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-  t.innerHTML = `<span>${icons[type] || ''}</span><span>${msg}</span>`;
+// ============== UI HELPERS ==============
+function showToast(msg, type) {
+  type = type || 'info';
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  t.innerHTML = '<span>' + (icons[type] || '') + '</span><span>' + msg + '</span>';
   c.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(40px)'; setTimeout(() => t.remove(), 300); }, 3500);
+  setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(40px)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
 }
 
 async function checkHealth() {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
+  var dot = document.getElementById('statusDot');
+  var txt = document.getElementById('statusText');
   try {
-    const data = await apiHealthCheck();
+    var data = await apiHealthCheck();
     if (data.status === 'healthy') {
       dot.className = 'status-dot online';
-      txt.textContent = 'API 在线';
+      txt.textContent = MOCK_MODE ? 'Mock 模式' : 'API 在线';
     } else {
       dot.className = 'status-dot offline';
       txt.textContent = 'API 异常';
     }
-  } catch {
+  } catch(e) {
     dot.className = 'status-dot offline';
     txt.textContent = 'API 离线';
   }
 }
 
 function updateGenerateBtn() {
-  const btn = document.getElementById('generateBtn');
-  const hasContent = !!state.contentFile;
-  const hasStyle = state.styleSource === 'preset' ? !!state.presetStyle : !!state.styleFile;
+  var btn = document.getElementById('generateBtn');
+  var hasContent = !!state.contentFile;
+  var hasStyle = state.styleSource === 'preset' ? !!state.presetStyle : !!state.styleFile;
   btn.disabled = !hasContent || !hasStyle || state.isProcessing;
 }
 
-// Content image upload
+// ============== CONTENT IMAGE UPLOAD ==============
 function setupContentUpload() {
-  const zone = document.getElementById('contentUpload');
-  const input = document.getElementById('contentInput');
-
-  zone.addEventListener('click', () => { if (!state.contentFile) input.click(); });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
+  var zone = document.getElementById('contentUpload');
+  var input = document.getElementById('contentInput');
+  zone.addEventListener('click', function(e) { if (!zone.classList.contains('has-image')) input.click(); });
+  zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', function() { zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', function(e) {
     e.preventDefault(); zone.classList.remove('drag-over');
     if (e.dataTransfer.files[0]) handleContentFile(e.dataTransfer.files[0]);
   });
-  input.addEventListener('change', () => { if (input.files[0]) handleContentFile(input.files[0]); });
+  input.addEventListener('change', function() { if (input.files[0]) handleContentFile(input.files[0]); });
 }
 
 function handleContentFile(file) {
@@ -976,9 +402,9 @@ function handleContentFile(file) {
   if (!file.type.startsWith('image/')) { showToast('请上传图片文件', 'error'); return; }
   state.contentFile = file;
   state.contentPreviewUrl = URL.createObjectURL(file);
-  const zone = document.getElementById('contentUpload');
+  var zone = document.getElementById('contentUpload');
   zone.classList.add('has-image');
-  zone.innerHTML = `<input type="file" id="contentInput" accept="image/*"><img src="${state.contentPreviewUrl}" alt="内容图片"><button class="remove-btn" onclick="removeContent(event)">✕</button>`;
+  zone.innerHTML = '<input type="file" id="contentInput" accept="image/*"><img src="' + state.contentPreviewUrl + '" alt="内容图片"><button class="remove-btn" onclick="removeContent(event)">✕</button>';
   document.getElementById('contentInput').addEventListener('change', function() { if (this.files[0]) handleContentFile(this.files[0]); });
   updateGenerateBtn();
   showToast('内容图片已上传', 'success');
@@ -989,35 +415,34 @@ function removeContent(e) {
   state.contentFile = null;
   if (state.contentPreviewUrl) URL.revokeObjectURL(state.contentPreviewUrl);
   state.contentPreviewUrl = null;
-  const zone = document.getElementById('contentUpload');
+  var zone = document.getElementById('contentUpload');
   zone.classList.remove('has-image');
-  zone.innerHTML = `<input type="file" id="contentInput" accept="image/*"><div class="icon">📤</div><div class="label">拖拽图片到此处，或 <strong>点击选择</strong><br>支持 JPG / PNG / WebP，最大 10MB</div>`;
+  zone.innerHTML = '<input type="file" id="contentInput" accept="image/*"><div class="icon">📤</div><div class="label">拖拽图片到此处，或 <strong>点击选择</strong><br>支持 JPG / PNG / WebP，最大 10MB</div>';
   setupContentUpload();
   updateGenerateBtn();
 }
 
-// Style image upload
+// ============== STYLE IMAGE UPLOAD ==============
 function setupStyleUpload() {
-  const zone = document.getElementById('styleUpload');
-  const input = document.getElementById('styleInput');
-
-  zone.addEventListener('click', () => { if (!state.styleFile) input.click(); });
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
+  var zone = document.getElementById('styleUpload');
+  var input = document.getElementById('styleInput');
+  zone.addEventListener('click', function() { if (!zone.classList.contains('has-image')) input.click(); });
+  zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', function() { zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', function(e) {
     e.preventDefault(); zone.classList.remove('drag-over');
     if (e.dataTransfer.files[0]) handleStyleFile(e.dataTransfer.files[0]);
   });
-  input.addEventListener('change', () => { if (input.files[0]) handleStyleFile(input.files[0]); });
+  input.addEventListener('change', function() { if (input.files[0]) handleStyleFile(input.files[0]); });
 }
 
 function handleStyleFile(file) {
   if (!file.type.startsWith('image/')) { showToast('请上传图片文件', 'error'); return; }
   state.styleFile = file;
   state.stylePreviewUrl = URL.createObjectURL(file);
-  const zone = document.getElementById('styleUpload');
+  var zone = document.getElementById('styleUpload');
   zone.classList.add('has-image');
-  zone.innerHTML = `<input type="file" id="styleInput" accept="image/*"><img src="${state.stylePreviewUrl}" alt="风格图片"><button class="remove-btn" onclick="removeStyle(event)" style="opacity:1">✕</button>`;
+  zone.innerHTML = '<input type="file" id="styleInput" accept="image/*"><img src="' + state.stylePreviewUrl + '" alt="风格图片"><button class="remove-btn" onclick="removeStyle(event)" style="opacity:1">✕</button>';
   document.getElementById('styleInput').addEventListener('change', function() { if (this.files[0]) handleStyleFile(this.files[0]); });
   updateGenerateBtn();
   showToast('风格图片已上传', 'success');
@@ -1028,16 +453,17 @@ function removeStyle(e) {
   state.styleFile = null;
   if (state.stylePreviewUrl) URL.revokeObjectURL(state.stylePreviewUrl);
   state.stylePreviewUrl = null;
-  const zone = document.getElementById('styleUpload');
+  var zone = document.getElementById('styleUpload');
   zone.classList.remove('has-image');
-  zone.innerHTML = `<input type="file" id="styleInput" accept="image/*"><div class="icon" style="font-size:36px">🎭</div><div class="label" style="font-size:13px">上传你喜欢的风格图片</div>`;
+  zone.innerHTML = '<input type="file" id="styleInput" accept="image/*"><div class="icon" style="font-size:36px">🎭</div><div class="label" style="font-size:13px">上传你喜欢的风格图片</div>';
   setupStyleUpload();
   updateGenerateBtn();
 }
 
+// ============== STYLE/ALGO CONTROLS ==============
 function switchStyleTab(tab) {
   state.styleSource = tab;
-  document.querySelectorAll('.style-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.style-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
   document.getElementById('presetPanel').classList.toggle('hidden', tab !== 'preset');
   document.getElementById('uploadPanel').classList.toggle('hidden', tab !== 'upload');
   updateGenerateBtn();
@@ -1045,13 +471,13 @@ function switchStyleTab(tab) {
 
 function selectPreset(id) {
   state.presetStyle = id;
-  document.querySelectorAll('.preset-card').forEach(c => c.classList.toggle('selected', c.dataset.preset === id));
+  document.querySelectorAll('.preset-card').forEach(function(c) { c.classList.toggle('selected', c.dataset.preset === id); });
   updateGenerateBtn();
 }
 
 function selectAlgo(algo) {
   state.algorithm = algo;
-  document.querySelectorAll('.algo-btn').forEach(b => b.classList.toggle('active', b.dataset.algo === algo));
+  document.querySelectorAll('.algo-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.algo === algo); });
 }
 
 function updateStrength(val) {
@@ -1060,53 +486,50 @@ function updateStrength(val) {
 }
 
 async function renderPresets() {
-  const grid = document.getElementById('presetsGrid');
+  var grid = document.getElementById('presetsGrid');
   try {
-    const data = await apiPresets();
-    const presets = data.presets || MOCK_PRESETS;
-    grid.innerHTML = presets.map(p => `
-      <div class="preset-card ${p.id === state.presetStyle ? 'selected' : ''}" data-preset="${p.id}" onclick="selectPreset('${p.id}')">
-        <div class="preview">${p.preview_url ? `<img src="${API_BASE}${p.preview_url}" alt="${p.name}">` : (p.emoji || '🎨')}</div>
-        <div class="name">${p.name}</div>
-        <div class="check">✓</div>
-      </div>
-    `).join('');
-  } catch {
-    grid.innerHTML = MOCK_PRESETS.map(p => `
-      <div class="preset-card ${p.id === state.presetStyle ? 'selected' : ''}" data-preset="${p.id}" onclick="selectPreset('${p.id}')">
-        <div class="preview">${p.emoji}</div>
-        <div class="name">${p.name}</div>
-        <div class="check">✓</div>
-      </div>
-    `).join('');
+    var data = await apiPresets();
+    var presets = data.presets || MOCK_PRESETS;
+    grid.innerHTML = presets.map(function(p) {
+      return '<div class="preset-card ' + (p.id === state.presetStyle ? 'selected' : '') + '" data-preset="' + p.id + '" onclick="selectPreset(\'' + p.id + '\')">'
+        + '<div class="preview">' + (p.preview_url ? '<img src="' + API_BASE + p.preview_url + '" alt="' + p.name + '">' : (p.emoji || '🎨')) + '</div>'
+        + '<div class="name">' + p.name + '</div>'
+        + '<div class="check">✓</div></div>';
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = MOCK_PRESETS.map(function(p) {
+      return '<div class="preset-card ' + (p.id === state.presetStyle ? 'selected' : '') + '" data-preset="' + p.id + '" onclick="selectPreset(\'' + p.id + '\')">'
+        + '<div class="preview">' + (p.emoji || '🎨') + '</div>'
+        + '<div class="name">' + p.name + '</div>'
+        + '<div class="check">✓</div></div>';
+    }).join('');
   }
 }
 
-// ============== MAIN FLOW ==============
+// ============== MAIN TRANSFER FLOW ==============
 async function startTransfer() {
   if (!state.contentFile || state.isProcessing) return;
   state.isProcessing = true;
   mockProgress = 0;
 
-  const btn = document.getElementById('generateBtn');
+  var btn = document.getElementById('generateBtn');
   btn.classList.add('loading');
   btn.disabled = true;
 
-  // Hide previous result
   document.getElementById('resultActions').classList.add('hidden');
   document.getElementById('compareCard').classList.add('hidden');
 
   try {
-    // 1. Upload
+    // Step 1: Upload
     showToast('正在上传图片...', 'info');
-    const styleFile = state.styleSource === 'upload' ? state.styleFile : null;
-    const uploadRes = await apiUpload(state.contentFile, styleFile);
+    var styleFile = state.styleSource === 'upload' ? state.styleFile : null;
+    var uploadRes = await apiUpload(state.contentFile, styleFile);
     state.contentId = uploadRes.content_id;
     state.styleId = uploadRes.style_id;
 
-    // 2. Start transfer
+    // Step 2: Start transfer
     showToast('开始风格转换...', 'info');
-    const transferParams = {
+    var transferParams = {
       content_id: state.contentId,
       style_source: state.styleSource,
       algorithm: state.algorithm,
@@ -1117,16 +540,14 @@ async function startTransfer() {
     } else {
       transferParams.preset_style = state.presetStyle;
     }
-    const transferRes = await apiStyleTransfer(transferParams);
+    var transferRes = await apiStyleTransfer(transferParams);
 
-    // 3. Poll progress
+    // Step 3: Poll progress
     document.getElementById('progressSection').classList.remove('hidden');
-    const resultDisplay = document.getElementById('resultDisplay');
-    resultDisplay.innerHTML = '<div class="skeleton" style="width:90%;height:300px;margin:auto"></div>';
-
+    document.getElementById('resultDisplay').innerHTML = '<div class="skeleton" style="width:90%;height:300px;margin:auto"></div>';
     await pollTaskStatus(transferRes.task_id);
 
-  } catch (err) {
+  } catch(err) {
     showToast('转换失败: ' + err.message, 'error');
     document.getElementById('progressSection').classList.add('hidden');
     document.getElementById('resultDisplay').innerHTML = '<div class="placeholder"><div class="icon">❌</div><p>转换失败，请重试</p></div>';
@@ -1138,12 +559,12 @@ async function startTransfer() {
 }
 
 async function pollTaskStatus(taskId) {
-  const bar = document.getElementById('progressBar');
-  const label = document.getElementById('progressLabel');
-  const percent = document.getElementById('progressPercent');
+  var bar = document.getElementById('progressBar');
+  var label = document.getElementById('progressLabel');
+  var percent = document.getElementById('progressPercent');
 
   while (true) {
-    const status = await apiTaskStatus(taskId);
+    var status = await apiTaskStatus(taskId);
 
     if (status.status === 'completed') {
       bar.style.width = '100%';
@@ -1151,18 +572,14 @@ async function pollTaskStatus(taskId) {
       label.textContent = '转换完成！';
       state.resultUrl = status.result_url;
 
-      // Show result
-      const resultDisplay = document.getElementById('resultDisplay');
-      resultDisplay.innerHTML = `<img src="${status.result_url}" alt="风格转换结果">`;
+      document.getElementById('resultDisplay').innerHTML = '<img src="' + status.result_url + '" alt="风格转换结果">';
       document.getElementById('resultActions').classList.remove('hidden');
       document.getElementById('progressSection').classList.add('hidden');
 
-      // Setup compare
       if (state.contentPreviewUrl) {
         document.getElementById('compareOriginal').src = state.contentPreviewUrl;
         document.getElementById('compareResult').src = status.result_url;
       }
-
       showToast('🎉 风格转换完成！', 'success');
       return;
     }
@@ -1171,17 +588,16 @@ async function pollTaskStatus(taskId) {
       throw new Error(status.error_message || '转换失败');
     }
 
-    // Update progress
     bar.style.width = status.progress + '%';
     percent.textContent = status.progress + '%';
     label.textContent = status.progress < 30 ? '正在分析图片...' : status.progress < 70 ? '正在应用风格...' : '正在生成结果...';
 
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(function(r) { setTimeout(r, 1000); });
   }
 }
 
 function toggleCompare() {
-  const card = document.getElementById('compareCard');
+  var card = document.getElementById('compareCard');
   card.classList.toggle('hidden');
   if (!card.classList.contains('hidden')) {
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1190,15 +606,26 @@ function toggleCompare() {
 
 function downloadResult() {
   if (!state.resultUrl) return;
-  const a = document.createElement('a');
+  var a = document.createElement('a');
   a.href = state.resultUrl;
-  a.download = `styleforge_${Date.now()}.png`;
+  a.download = 'styleforge_' + Date.now() + '.png';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   showToast('图片下载中...', 'success');
 }
 
 // ============== INIT ==============
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async function() {
+  // Auto-detect: try real API first, fallback to mock
+  try {
+    var res = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
+    var data = await res.json();
+    MOCK_MODE = !(data && data.status === 'healthy');
+  } catch(e) {
+    MOCK_MODE = true;
+  }
+
   checkHealth();
   setInterval(checkHealth, 30000);
   setupContentUpload();

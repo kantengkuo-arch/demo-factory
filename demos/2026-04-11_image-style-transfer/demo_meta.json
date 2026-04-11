@@ -3,7 +3,7 @@
   "slug": "image-style-transfer",
   "direction": "计算机视觉",
   "tech_stack": ["Python", "FastAPI", "PyTorch", "VGG19", "torchvision"],
-  "status": "in-progress",
+  "status": "completed",
   "created_at": "2026-04-11T22:21:00+08:00",
   "description": "基于 VGG19 的 Neural Style Transfer，将图片转换为不同艺术风格",
   "has_frontend": true,
