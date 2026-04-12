@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏭 Demo Factory — Portfolio</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --border:   #2a2d3a;
+    --text:     #e4e4e7;
+    --muted:    #71717a;
+    --accent:   #818cf8;
+    --green:    #22c55e;
+    --yellow:   #eab308;
+    --red:      #ef4444;
+    --blue:     #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Nav ─────────────────────────────────────────── */
+  nav {
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .logo {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-right: 2rem;
+    white-space: nowrap;
+  }
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .tabs button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .tabs button.active,
+  .tabs button:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ── Container ───────────────────────────────────── */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* ── Stats Row ───────────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .stat-card .value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-card .label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+
+  /* ── Demo Grid ───────────────────────────────────── */
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--muted);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    transition: border-color 0.2s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-header h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.running  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.stopped  { background: var(--muted); }
+  .card-desc {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .tag {
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    background: #2a2d3a;
+    color: var(--accent);
+  }
+  .tag.dir {
+    background: #1e293b;
+    color: #38bdf8;
+  }
+  .score-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .score-green  { background: #16a34a22; color: var(--green); }
+  .score-yellow { background: #ca8a0422; color: var(--yellow); }
+  .score-red    { background: #dc262622; color: var(--red); }
+  .score-none   { background: #27272a; color: var(--muted); }
+
+  .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+  }
+  .btn {
+    padding: 0.45rem 0.9rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-start { background: var(--green); color: #fff; }
+  .btn-stop  { background: var(--red);   color: #fff; }
+  .btn-open  { background: var(--blue);  color: #fff; }
+
+  /* ── Chart ───────────────────────────────────────── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  canvas { width: 100% !important; }
+
+  /* ── Placeholder Tab ─────────────────────────────── */
+  .placeholder {
+    text-align: center;
+    padding: 5rem 1rem;
+    color: var(--muted);
+    font-size: 1.1rem;
+  }
+  .hidden { display: none; }
+
+  /* ── Loading ─────────────────────────────────────── */
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner::before {
+    content: '⚙️';
+    display: inline-block;
+    animation: spin 1.2s linear infinite;
+    font-size: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🏭 Demo Factory</div>
+  <div class="tabs">
+    <button class="active" onclick="switchTab('demos')">Demo 列表</button>
+    <button onclick="switchTab('timeline')">协作时间线</button>
+    <button onclick="switchTab('arena')">竞技场</button>
+  </div>
+</nav>
+
+<div class="container">
+  <!-- Tab: demos -->
+  <div id="tab-demos">
+    <div class="stats" id="stats-row">
+      <div class="stat-card"><div class="value" id="st-total">—</div><div class="label">总 Demo 数</div></div>
+      <div class="stat-card"><div class="value" id="st-avg">—</div><div class="label">平均评分</div></div>
+      <div class="stat-card"><div class="value" id="st-running">—</div><div class="label">运行中</div></div>
+    </div>
+
+    <div class="section-title">📦 Demo 列表</div>
+    <div class="grid" id="demo-grid">
+      <div class="loading"><span class="spinner"></span><br>正在加载…</div>
+    </div>
+
+    <div class="section-title">📈 评分趋势</div>
+    <div class="chart-wrap">
+      <canvas id="trendChart" height="260"></canvas>
+    </div>
+  </div>
+
+  <!-- Tab: timeline (placeholder) -->
+  <div id="tab-timeline" class="hidden">
+    <div class="placeholder">🚧 协作时间线 — 即将上线</div>
+  </div>
+
+  <!-- Tab: arena (placeholder) -->
+  <div id="tab-arena" class="hidden">
+    <div class="placeholder">🚧 竞技场 — 即将上线</div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:7000';
+let trendChart = null;
+
+// ── Tab switch ──────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  ['demos', 'timeline', 'arena'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+  });
+}
+
+// ── Load stats ──────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch(API + '/api/stats');
+    const d = await r.json();
+    document.getElementById('st-total').textContent = d.total;
+    document.getElementById('st-avg').textContent = d.avg_score || '—';
+    document.getElementById('st-running').textContent = d.running;
+    renderTrend(d.trend || []);
+  } catch(e) { console.error('stats error', e); }
+}
+
+// ── Load demos ──────────────────────────────────────
+async function loadDemos() {
+  const grid = document.getElementById('demo-grid');
+  try {
+    const r = await fetch(API + '/api/demos');
+    const demos = await r.json();
+    grid.innerHTML = '';
+    if (!demos.length) {
+      grid.innerHTML = '<div class="loading">暂无 Demo</div>';
+      return;
+    }
+    demos.forEach(d => grid.appendChild(makeCard(d)));
+  } catch(e) {
+    grid.innerHTML = '<div class="loading">⚠️ 无法连接后端</div>';
+  }
+}
+
+// ── Build card ──────────────────────────────────────
+function makeCard(d) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.id = 'card-' + d.slug;
+
+  const running = d.run_status === 'running';
+  const score = d.score;
+  let scoreClass = 'score-none', scoreText = '未评分';
+  if (score != null) {
+    scoreText = score;
+    scoreClass = score >= 80 ? 'score-green' : score >= 60 ? 'score-yellow' : 'score-red';
+  }
+
+  const techTags = (d.tech_stack || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  el.innerHTML = `
+    <div class="card-header">
+      <h3>${d.name}</h3>
+      <span class="dot ${running ? 'running' : 'stopped'}" title="${running ? '运行中' : '已停止'}"></span>
+    </div>
+    <div class="card-desc">${d.description || ''}</div>
+    <div class="tags">
+      <span class="tag dir">${d.direction || ''}</span>
+      ${techTags}
+    </div>
+    <div style="display:flex;align-items:center;gap:0.6rem;">
+      <span class="score-badge ${scoreClass}">${scoreText}</span>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-start" onclick="startDemo('${d.slug}')" ${running?'disabled':''}>▶ 启动</button>
+      <button class="btn btn-stop"  onclick="stopDemo('${d.slug}')"  ${!running?'disabled':''}>⏹ 停止</button>
+      ${running ? `<button class="btn btn-open" onclick="window.open('http://localhost:${d.run_port}','_blank')">🔗 打开体验</button>` : ''}
+    </div>
+  `;
+  return el;
+}
+
+// ── Start / Stop ────────────────────────────────────
+async function startDemo(slug) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ 启动中…';
+  try {
+    const r = await fetch(API + '/api/demos/' + slug + '/start', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { alert('启动失败: ' + (d.detail || '未知错误')); return; }
+  } catch(e) { alert('请求失败'); }
+  await reload();
+}
+
+async function stopDemo(slug) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ 停止中…';
+  try {
+    await fetch(API + '/api/demos/' + slug + '/stop', { method: 'POST' });
+  } catch(e) { alert('请求失败'); }
+  await reload();
+}
+
+// ── Trend Chart ─────────────────────────────────────
+function renderTrend(trend) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const labels = trend.map(t => t.name);
+  const data = trend.map(t => t.score);
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '评分',
+        data,
+        borderColor: '#818cf8',
+        backgroundColor: 'rgba(129,140,248,0.15)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 5,
+        pointBackgroundColor: '#818cf8',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#71717a', font: { size: 11 } },
+          grid: { color: '#2a2d3a' },
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#71717a', stepSize: 20 },
+          grid: { color: '#2a2d3a' },
+        },
+      },
+    },
+  });
+}
+
+// ── Reload ──────────────────────────────────────────
+async function reload() {
+  await Promise.all([loadDemos(), loadStats()]);
+}
+
+reload();
+</script>
+</body>
+</html>
