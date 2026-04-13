@@ -67,7 +67,7 @@ def _detect_date_column(df: pd.DataFrame) -> Optional[str]:
     for col in df.columns:
         if df[col].dtype == "object":
             try:
-                pd.to_datetime(df[col].head(10), infer_datetime_format=True)
+                pd.to_datetime(df[col].head(10))
                 return col
             except Exception:
                 continue
@@ -89,7 +89,7 @@ def _prepare_series(df: pd.DataFrame, date_col: str, value_col: str) -> pd.DataF
     """
     series = df[[date_col, value_col]].copy()
     series.columns = ["ds", "y"]
-    series["ds"] = pd.to_datetime(series["ds"], infer_datetime_format=True)
+    series["ds"] = pd.to_datetime(series["ds"])
     series = series.dropna().drop_duplicates(subset=["ds"]).sort_values("ds").reset_index(drop=True)
     return series
 
