@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 时间序列预测</title>
+<script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f172a;--card:#1e293b;--border:#334155;
+  --primary:#3b82f6;--primary-hover:#2563eb;
+  --text:#e2e8f0;--text-sec:#94a3b8;
+  --success:#10b981;--error:#ef4444;
+  --purple:#8b5cf6;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.container{max-width:1100px;margin:0 auto;padding:24px 16px}
+
+/* Header */
+header{text-align:center;margin-bottom:32px;animation:fadeIn .6s ease}
+header h1{font-size:2rem;background:linear-gradient(135deg,var(--primary),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+header p{color:var(--text-sec);font-size:1rem}
+.status-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;font-size:.85rem}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.online{background:var(--success);box-shadow:0 0 6px var(--success)}
+.status-dot.offline{background:var(--error);box-shadow:0 0 6px var(--error)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;animation:slideUp .5s ease}
+.card h2{font-size:1.15rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* Upload Zone */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .3s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--primary);background:rgba(59,130,246,.06)}
+.upload-zone .icon{font-size:3rem;margin-bottom:12px}
+.upload-zone p{color:var(--text-sec)}
+.upload-zone .hint{font-size:.8rem;margin-top:8px;color:var(--text-sec)}
+.upload-zone input[type=file]{display:none}
+.file-info{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(59,130,246,.08);border-radius:8px;margin-top:12px}
+.file-info .name{flex:1;font-weight:500}
+.file-info .remove{cursor:pointer;color:var(--error);font-size:1.1rem}
+
+/* Form Controls */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.85rem;color:var(--text-sec);margin-bottom:6px}
+select,input[type=range]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:.9rem;outline:none;transition:border .2s}
+select:focus{border-color:var(--primary)}
+select option{background:var(--bg)}
+.range-wrap{display:flex;align-items:center;gap:12px}
+.range-wrap input[type=range]{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;background:var(--border);border:none;padding:0}
+.range-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer}
+.range-val{min-width:60px;text-align:center;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:.85rem}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border-radius:8px;border:none;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--purple));color:#fff}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.4)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary.loading{pointer-events:none}
+.btn-primary.loading::after{content:'';width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Model Cards */
+.model-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.model-list{grid-template-columns:1fr}}
+.model-card{padding:14px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
+.model-card:hover{border-color:var(--primary);background:rgba(59,130,246,.04)}
+.model-card.active{border-color:var(--primary);background:rgba(59,130,246,.1)}
+.model-card .mname{font-weight:600;margin-bottom:4px}
+.model-card .mdesc{font-size:.78rem;color:var(--text-sec)}
+
+/* Results */
+#results-section{display:none}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.metric .label{font-size:.75rem;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px}
+.metric .value{font-size:1.4rem;font-weight:700;margin-top:4px}
+.metric .value.blue{color:var(--primary)}
+.metric .value.green{color:var(--success)}
+.metric .value.purple{color:var(--purple)}
+#chart-container{border-radius:8px;overflow:hidden;min-height:400px}
+
+/* Preview Table */
+.preview-table-wrap{max-height:200px;overflow:auto;border-radius:8px;border:1px solid var(--border)}
+.preview-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.preview-table th,.preview-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.preview-table th{background:var(--bg);color:var(--text-sec);position:sticky;top:0;z-index:1}
+.preview-table td{color:var(--text)}
+
+/* Skeleton */
+.skeleton{background:linear-gradient(90deg,var(--border) 25%,#475569 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-line{height:16px;margin-bottom:10px;border-radius:6px}
+.skeleton-chart{height:350px;border-radius:8px}
+
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:8px;font-size:.9rem;z-index:999;animation:toastIn .3s ease;max-width:400px}
+.toast.error{background:var(--error);color:#fff}
+.toast.success{background:var(--success);color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .5s ease}
+
+/* Footer */
+footer{text-align:center;padding:24px 0;color:var(--text-sec);font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📈 AI 时间序列预测</h1>
+    <p>上传历史数据，AI 帮你预测未来趋势</p>
+    <div class="status-bar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">检测中...</span>
+    </div>
+  </header>
+
+  <!-- Step 1: Upload -->
+  <div class="card" id="upload-card">
+    <h2>📁 第一步：上传数据</h2>
+    <div class="upload-zone" id="uploadZone">
+      <div class="icon">📂</div>
+      <p>拖拽 CSV 文件到这里，或点击选择文件</p>
+      <p class="hint">支持 .csv 格式，包含日期列和数值列</p>
+      <input type="file" id="fileInput" accept=".csv">
+    </div>
+    <div id="fileInfo" style="display:none">
+      <div class="file-info">
+        <span>📄</span>
+        <span class="name" id="fileName"></span>
+        <span class="remove" id="removeFile" title="移除文件">✕</span>
+      </div>
+    </div>
+    <!-- Preview -->
+    <div id="previewSection" style="display:none;margin-top:16px">
+      <p style="font-size:.85rem;color:var(--text-sec);margin-bottom:8px">数据预览（前 5 行）</p>
+      <div class="preview-table-wrap">
+        <table class="preview-table" id="previewTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Config -->
+  <div class="card" id="config-card" style="display:none">
+    <h2>⚙️ 第二步：配置预测</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>时间列</label>
+        <select id="dateCol"></select>
+      </div>
+      <div class="form-group">
+        <label>数值列（预测目标）</label>
+        <select id="valueCol"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>选择预测模型</label>
+      <div class="model-list" id="modelList"></div>
+    </div>
+    <div class="form-group">
+      <label>预测步数</label>
+      <div class="range-wrap">
+        <input type="range" id="forecastSteps" min="7" max="365" value="30">
+        <span class="range-val" id="stepsVal">30 天</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn btn-primary" id="predictBtn" disabled>🚀 开始预测</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Results -->
+  <div class="card" id="results-section">
+    <h2>📊 预测结果</h2>
+    <div id="loadingSkeleton" style="display:none">
+      <div class="skeleton skeleton-line" style="width:60%"></div>
+      <div class="skeleton skeleton-line" style="width:40%"></div>
+      <div class="skeleton skeleton-chart" style="margin-top:12px"></div>
+    </div>
+    <div id="resultsContent" style="display:none">
+      <div class="metrics-grid" id="metricsGrid"></div>
+      <div id="chart-container"></div>
+    </div>
+  </div>
+</div>
+
+<footer>AI 时间序列预测 Demo · Powered by AI Demo Factory</footer>
+
+<script>
+// ===================== CONFIG =====================
+const API_BASE = 'http://localhost:8000';
+const MOCK_MODE = true;
+
+// ===================== STATE =====================
+let uploadedFileId = null;
+let selectedModel = null;
+let uploadData = null;
+let availableModels = [];
+
+// ===================== DOM =====================
+const $=s=>document.querySelector(s);
+const statusDot=$('#statusDot'), statusText=$('#statusText');
+const uploadZone=$('#uploadZone'), fileInput=$('#fileInput');
+const fileInfo=$('#fileInfo'), fileName=$('#fileName'), removeFile=$('#removeFile');
+const previewSection=$('#previewSection'), previewTable=$('#previewTable');
+const configCard=$('#config-card');
+const dateCol=$('#dateCol'), valueCol=$('#valueCol');
+const modelList=$('#modelList');
+const forecastSteps=$('#forecastSteps'), stepsVal=$('#stepsVal');
+const predictBtn=$('#predictBtn');
+const resultsSection=$('#results-section');
+const loadingSkeleton=$('#loadingSkeleton'), resultsContent=$('#resultsContent');
+const metricsGrid=$('#metricsGrid'), chartContainer=$('#chart-container');
+
+// ===================== MOCK DATA =====================
+function generateMockCSVData(){
+  const cols=['date','price','volume'];
+  const rows=[];
+  let d=new Date('2023-01-01'), price=100, vol=1000;
+  for(let i=0;i<365;i++){
+    const ds=d.toISOString().split('T')[0];
+    price+=(Math.random()-.48)*3;
+    vol=Math.max(500,vol+(Math.random()-.5)*100);
+    rows.push([ds,Math.round(price*100)/100,Math.round(vol)]);
+    d.setDate(d.getDate()+1);
+  }
+  return {columns:cols,rows_count:365,date_column:'date',value_columns:['price','volume'],preview:rows.slice(0,5),file_id:'mock-uuid-001'};
+}
+
+function generateMockPrediction(steps){
+  const hist=[];
+  let d=new Date('2023-01-01'),p=100;
+  for(let i=0;i<365;i++){
+    const ds=d.toISOString().split('T')[0];
+    p+=(Math.random()-.48)*3;
+    hist.push([ds,Math.round(p*100)/100]);
+    d.setDate(d.getDate()+1);
+  }
+  const preds=[];
+  let lastP=p;
+  for(let i=0;i<steps;i++){
+    const ds=d.toISOString().split('T')[0];
+    lastP+=(Math.random()-.45)*2.5;
+    const lo=lastP-5-Math.random()*3;
+    const hi=lastP+5+Math.random()*3;
+    preds.push([ds,Math.round(lastP*100)/100,Math.round(lo*100)/100,Math.round(hi*100)/100]);
+    d.setDate(d.getDate()+1);
+  }
+  return {historical_data:hist,predictions:preds,model_metrics:{mae:2.53,mape:0.021},status:'success'};
+}
+
+const MOCK_MODELS={models:[
+  {name:'prophet',display_name:'Prophet (自动)',description:'适合有季节性的数据'},
+  {name:'lstm',display_name:'LSTM (深度学习)',description:'适合复杂非线性模式'},
+  {name:'linear',display_name:'线性回归',description:'快速基线预测'}
+]};
+
+// ===================== API =====================
+async function apiGet(path){
+  if(MOCK_MODE){
+    if(path==='/health') return {status:'healthy'};
+    if(path==='/api/models') return MOCK_MODELS;
+  }
+  const res=await fetch(API_BASE+path);
+  if(!res.ok) throw new Error(`请求失败: ${res.status}`);
+  return res.json();
+}
+
+async function apiUpload(file){
+  if(MOCK_MODE){
+    await new Promise(r=>setTimeout(r,800));
+    return generateMockCSVData();
+  }
+  const fd=new FormData();
+  fd.append('file',file);
+  const res=await fetch(API_BASE+'/api/upload',{method:'POST',body:fd});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||`上传失败: ${res.status}`);}
+  return res.json();
+}
+
+async function apiPredict(params){
+  if(MOCK_MODE){
+    await new Promise(r=>setTimeout(r,1500));
+    return generateMockPrediction(params.forecast_steps);
+  }
+  const res=await fetch(API_BASE+'/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||`预测失败: ${res.status}`);}
+  return res.json();
+}
+
+// ===================== TOAST =====================
+function showToast(msg,type='error'){
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},3500);
+}
+
+// ===================== HEALTH CHECK =====================
+async function checkHealth(){
+  try{
+    const r=await apiGet('/health');
+    if(r.status==='healthy'){
+      statusDot.className='status-dot online';
+      statusText.textContent='API 在线';
+    }else throw 0;
+  }catch{
+    statusDot.className='status-dot offline';
+    statusText.textContent=MOCK_MODE?'Mock 模式':'API 离线';
+  }
+}
+
+// ===================== MODELS =====================
+async function loadModels(){
+  try{
+    const r=await apiGet('/api/models');
+    availableModels=r.models;
+    renderModels();
+  }catch(e){
+    showToast('加载模型列表失败: '+e.message);
+  }
+}
+
+function renderModels(){
+  modelList.innerHTML='';
+  availableModels.forEach(m=>{
+    const card=document.createElement('div');
+    card.className='model-card';
+    card.dataset.name=m.name;
+    card.innerHTML=`<div class="mname">${m.display_name}</div><div class="mdesc">${m.description}</div>`;
+    card.onclick=()=>{
+      document.querySelectorAll('.model-card').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      selectedModel=m.name;
+      checkReady();
+    };
+    modelList.appendChild(card);
+  });
+}
+
+// ===================== UPLOAD =====================
+uploadZone.addEventListener('click',()=>fileInput.click());
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('dragover')});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('dragover');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0])});
+removeFile.addEventListener('click',resetUpload);
+
+async function handleFile(file){
+  if(!file.name.endsWith('.csv')){showToast('请上传 .csv 文件');return;}
+  fileName.textContent=`${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  fileInfo.style.display='block';
+  uploadZone.style.display='none';
+
+  try{
+    const data=await apiUpload(file);
+    uploadData=data;
+    uploadedFileId=data.file_id;
+    showPreview(data);
+    populateSelects(data);
+    configCard.style.display='block';
+    configCard.classList.add('fade-in');
+    showToast(`成功解析 ${data.rows_count} 行数据`,'success');
+  }catch(e){
+    showToast('上传失败: '+e.message);
+    resetUpload();
+  }
+}
+
+function resetUpload(){
+  fileInfo.style.display='none';
+  uploadZone.style.display='';
+  previewSection.style.display='none';
+  configCard.style.display='none';
+  resultsSection.style.display='none';
+  uploadedFileId=null;uploadData=null;selectedModel=null;
+  fileInput.value='';
+  predictBtn.disabled=true;
+}
+
+function showPreview(data){
+  if(!data.preview||!data.preview.length)return;
+  let html='<thead><tr>';
+  data.columns.forEach(c=>html+=`<th>${c}</th>`);
+  html+='</tr></thead><tbody>';
+  data.preview.forEach(row=>{
+    html+='<tr>';
+    row.forEach(v=>html+=`<td>${v}</td>`);
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  previewTable.innerHTML=html;
+  previewSection.style.display='block';
+}
+
+function populateSelects(data){
+  dateCol.innerHTML='';
+  valueCol.innerHTML='';
+  // date column
+  data.columns.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c;opt.textContent=c;
+    if(c===data.date_column) opt.selected=true;
+    dateCol.appendChild(opt);
+  });
+  // value columns
+  data.value_columns.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c;opt.textContent=c;
+    valueCol.appendChild(opt);
+  });
+  checkReady();
+}
+
+// ===================== SLIDER =====================
+forecastSteps.addEventListener('input',()=>{
+  stepsVal.textContent=forecastSteps.value+' 天';
+});
+
+// ===================== READY CHECK =====================
+function checkReady(){
+  predictBtn.disabled=!(uploadedFileId && selectedModel && valueCol.value);
+}
+dateCol.addEventListener('change',checkReady);
+valueCol.addEventListener('change',checkReady);
+
+// ===================== PREDICT =====================
+predictBtn.addEventListener('click',async()=>{
+  if(predictBtn.disabled)return;
+  predictBtn.classList.add('loading');
+  predictBtn.disabled=true;
+  resultsSection.style.display='block';
+  resultsSection.classList.add('fade-in');
+  loadingSkeleton.style.display='block';
+  resultsContent.style.display='none';
+
+  try{
+    const result=await apiPredict({
+      file_id:uploadedFileId,
+      date_column:dateCol.value,
+      value_column:valueCol.value,
+      model_type:selectedModel,
+      forecast_steps:parseInt(forecastSteps.value)
+    });
+    renderResults(result);
+  }catch(e){
+    showToast('预测失败: '+e.message);
+    resultsSection.style.display='none';
+  }finally{
+    predictBtn.classList.remove('loading');
+    predictBtn.disabled=false;
+    loadingSkeleton.style.display='none';
+  }
+});
+
+// ===================== RENDER RESULTS =====================
+function renderResults(data){
+  resultsContent.style.display='block';
+  resultsContent.classList.add('fade-in');
+
+  // Metrics
+  const mae=data.model_metrics.mae;
+  const mape=data.model_metrics.mape;
+  const histLen=data.historical_data.length;
+  const predLen=data.predictions.length;
+  metricsGrid.innerHTML=`
+    <div class="metric"><div class="label">历史数据点</div><div class="value blue">${histLen}</div></div>
+    <div class="metric"><div class="label">预测步数</div><div class="value purple">${predLen}</div></div>
+    <div class="metric"><div class="label">MAE</div><div class="value green">${mae.toFixed(2)}</div></div>
+    <div class="metric"><div class="label">MAPE</div><div class="value green">${(mape*100).toFixed(1)}%</div></div>
+  `;
+
+  // Chart
+  const histDates=data.historical_data.map(r=>r[0]);
+  const histVals=data.historical_data.map(r=>r[1]);
+  const predDates=data.predictions.map(r=>r[0]);
+  const predVals=data.predictions.map(r=>r[1]);
+  const predLo=data.predictions.map(r=>r[2]);
+  const predHi=data.predictions.map(r=>r[3]);
+
+  const traces=[
+    {x:histDates,y:histVals,name:'历史数据',type:'scatter',mode:'lines',line:{color:'#3b82f6',width:2}},
+    {x:predDates,y:predVals,name:'预测值',type:'scatter',mode:'lines',line:{color:'#ef4444',width:2,dash:'dot'}},
+    {x:predDates.concat([...predDates].reverse()),y:predHi.concat([...predLo].reverse()),fill:'toself',fillcolor:'rgba(239,68,68,0.1)',line:{color:'transparent'},name:'置信区间',showlegend:true,type:'scatter'}
+  ];
+
+  const layout={
+    paper_bgcolor:'#1e293b',
+    plot_bgcolor:'#1e293b',
+    font:{color:'#e2e8f0',size:12},
+    xaxis:{gridcolor:'#334155',title:'日期'},
+    yaxis:{gridcolor:'#334155',title:valueCol.value},
+    legend:{orientation:'h',y:1.12,x:.5,xanchor:'center'},
+    margin:{l:60,r:20,t:30,b:50},
+    hovermode:'x unified'
+  };
+
+  Plotly.newPlot(chartContainer,traces,layout,{responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']});
+}
+
+// ===================== INIT =====================
+checkHealth();
+loadModels();
+setInterval(checkHealth,30000);
+</script>
+</body>
+</html>
