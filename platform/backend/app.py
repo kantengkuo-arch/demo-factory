@@ -1,21 +1,16 @@
 """
-🏭 Demo Factory — Portfolio Management Panel
-Backend API server (port 7000)
+Demo Factory Portfolio — 后端 API
+管理所有 demo 的展示、启动、停止
 """
-
 import json
-import os
-import signal
 import subprocess
-import asyncio
+import os
 from pathlib import Path
-from typing import Dict, Optional
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
 
-app = FastAPI(title="Demo Factory Portfolio", version="1.0.0")
-
+app = FastAPI(title="Demo Factory Portfolio")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,205 +18,229 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# === 配置 ===
 FACTORY_ROOT = Path(os.environ.get("FACTORY_ROOT", "/root/projects/demo-factory"))
 DEMOS_DIR = FACTORY_ROOT / "demos"
 REGISTRY_FILE = DEMOS_DIR / "_registry.json"
 
-# In-memory running state: slug -> {pid, port, process}
-running_demos: Dict[str, dict] = {}
+# 运行中的 demo 容器记录（内存中，重启后清空）
+# 格式：{ "demo-slug": { "port": 9001, "container_id": "abc123", "started_at": "..." } }
+running_demos = {}
 
-# Port allocation
-_next_port = 9001
-
-
-def _alloc_port() -> int:
-    global _next_port
-    port = _next_port
-    _next_port += 1
-    return port
+# 端口分配：从 9001 开始递增
+NEXT_PORT = 9001
 
 
-def _load_registry() -> list:
+def load_registry():
+    """读取 demo 注册表"""
     if not REGISTRY_FILE.exists():
         return []
     with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def _get_demo_status(slug: str) -> str:
-    info = running_demos.get(slug)
-    if info is None:
-        return "stopped"
-    # Check if process is still alive
-    proc: subprocess.Popen = info.get("process")
-    if proc and proc.poll() is None:
-        return "running"
-    # Process died — clean up
-    running_demos.pop(slug, None)
-    return "stopped"
+def find_available_port():
+    """找一个可用端口"""
+    global NEXT_PORT
+    port = NEXT_PORT
+    NEXT_PORT += 1
+    return port
 
 
-def _enrich(demo: dict) -> dict:
-    """Attach runtime status and port to a demo record."""
-    slug = demo.get("slug", "")
-    status = _get_demo_status(slug)
-    demo["run_status"] = status
-    demo["run_port"] = running_demos.get(slug, {}).get("port")
+@app.get("/health")
+def health():
+    return {"status": "healthy", "service": "portfolio"}
+
+
+@app.get("/api/demos")
+def list_demos():
+    """列出所有 demo 及其运行状态"""
+    registry = load_registry()
+    for demo in registry:
+        slug = demo.get("slug", "")
+        if slug in running_demos:
+            demo["running"] = True
+            demo["port"] = running_demos[slug]["port"]
+            demo["url"] = f"http://localhost:{running_demos[slug]['port']}"
+        else:
+            demo["running"] = False
+            demo["port"] = None
+            demo["url"] = None
+    return {"demos": registry, "total": len(registry), "running_count": len(running_demos)}
+
+
+@app.get("/api/demos/{slug}")
+def get_demo(slug: str):
+    """获取单个 demo 详情"""
+    registry = load_registry()
+    demo = next((d for d in registry if d.get("slug") == slug), None)
+    if not demo:
+        raise HTTPException(status_code=404, detail=f"Demo '{slug}' not found")
+
+    # 读取 README
+    folder = demo.get("folder", "")
+    readme_path = DEMOS_DIR / folder / "README.md"
+    demo["readme"] = readme_path.read_text(encoding="utf-8") if readme_path.exists() else ""
+
+    # 运行状态
+    if slug in running_demos:
+        demo["running"] = True
+        demo["port"] = running_demos[slug]["port"]
+        demo["url"] = f"http://localhost:{running_demos[slug]['port']}"
+    else:
+        demo["running"] = False
+
     return demo
 
 
-# ── Health ────────────────────────────────────────────────────────────────────
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-# ── GET /api/demos ────────────────────────────────────────────────────────────
-@app.get("/api/demos")
-def list_demos():
-    demos = _load_registry()
-    return [_enrich(d) for d in demos]
-
-
-# ── GET /api/demos/{slug} ────────────────────────────────────────────────────
-@app.get("/api/demos/{slug}")
-def get_demo(slug: str):
-    demos = _load_registry()
-    demo = next((d for d in demos if d.get("slug") == slug), None)
-    if demo is None:
-        raise HTTPException(status_code=404, detail="Demo not found")
-
-    # Try to read README.md
-    folder = demo.get("folder", "")
-    readme_path = DEMOS_DIR / folder / "README.md"
-    readme = ""
-    if readme_path.exists():
-        readme = readme_path.read_text(encoding="utf-8")
-    demo["readme"] = readme
-
-    return _enrich(demo)
-
-
-# ── POST /api/demos/{slug}/start ─────────────────────────────────────────────
 @app.post("/api/demos/{slug}/start")
-async def start_demo(slug: str):
-    if _get_demo_status(slug) == "running":
-        info = running_demos[slug]
-        return {"status": "already_running", "port": info["port"]}
+def start_demo(slug: str):
+    """按需启动一个 demo（用 Docker 或直接 python 进程）"""
+    if slug in running_demos:
+        return {"message": "已经在运行", "port": running_demos[slug]["port"]}
 
-    demos = _load_registry()
-    demo = next((d for d in demos if d.get("slug") == slug), None)
-    if demo is None:
-        raise HTTPException(status_code=404, detail="Demo not found")
+    registry = load_registry()
+    demo = next((d for d in registry if d.get("slug") == slug), None)
+    if not demo:
+        raise HTTPException(status_code=404, detail=f"Demo '{slug}' not found")
 
     folder = demo.get("folder", "")
-    backend_dir = DEMOS_DIR / folder / "backend"
-    app_file = backend_dir / "app.py"
-    req_file = backend_dir / "requirements.txt"
+    demo_dir = DEMOS_DIR / folder
+    backend_dir = demo_dir / "backend"
 
-    if not app_file.exists():
-        raise HTTPException(status_code=400, detail="No backend/app.py found")
+    if not (backend_dir / "app.py").exists():
+        raise HTTPException(status_code=400, detail="Demo 没有 backend/app.py")
 
-    port = _alloc_port()
-    venv_dir = f"/tmp/demo_venv_{slug}"
+    port = find_available_port()
+    dockerfile = demo_dir / "Dockerfile"
 
-    # Create venv + install deps
     try:
-        subprocess.run(
-            ["python3", "-m", "venv", venv_dir],
-            check=True, capture_output=True, timeout=30,
-        )
-        if req_file.exists():
+        if dockerfile.exists():
+            # 有 Dockerfile，用 Docker 启动
+            container_name = f"demo-{slug}"
+            # 构建镜像
             subprocess.run(
-                [f"{venv_dir}/bin/pip", "install", "-q", "-r", str(req_file)],
-                check=True, capture_output=True, timeout=120,
+                ["docker", "build", "-t", container_name, "."],
+                cwd=str(demo_dir), check=True, capture_output=True, timeout=120
             )
-        # Make sure uvicorn is available
-        subprocess.run(
-            [f"{venv_dir}/bin/pip", "install", "-q", "uvicorn", "fastapi"],
-            check=True, capture_output=True, timeout=60,
-        )
+            # 启动容器
+            result = subprocess.run(
+                ["docker", "run", "-d", "--name", container_name,
+                 "-p", f"{port}:8000", container_name],
+                capture_output=True, text=True, check=True, timeout=30
+            )
+            container_id = result.stdout.strip()
+        else:
+            # 没有 Dockerfile，用 venv + python 启动
+            venv_dir = f"/tmp/demo_venv_{slug}"
+            setup_cmds = f"""
+                python3 -m venv {venv_dir} && \
+                {venv_dir}/bin/pip install -r {backend_dir}/requirements.txt -q && \
+                cd {backend_dir} && \
+                PORT={port} {venv_dir}/bin/python3 -c "
+import uvicorn
+import importlib.util
+import sys
+spec = importlib.util.spec_from_file_location('app', 'app.py')
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+uvicorn.run(mod.app, host='0.0.0.0', port={port})
+" &
+            """
+            result = subprocess.Popen(
+                ["bash", "-c", setup_cmds],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            container_id = str(result.pid)
+
+        running_demos[slug] = {
+            "port": port,
+            "container_id": container_id,
+            "started_at": datetime.now().isoformat(),
+            "method": "docker" if dockerfile.exists() else "process",
+        }
+        return {"message": "启动成功", "port": port, "url": f"http://localhost:{port}"}
+
     except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Setup failed: {e.stderr.decode()[:500]}")
-
-    # Launch uvicorn
-    proc = subprocess.Popen(
-        [
-            f"{venv_dir}/bin/uvicorn",
-            "app:app",
-            "--host", "0.0.0.0",
-            "--port", str(port),
-        ],
-        cwd=str(backend_dir),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        preexec_fn=os.setsid,
-    )
-
-    # Give it a moment to bind
-    await asyncio.sleep(1)
-
-    if proc.poll() is not None:
-        raise HTTPException(status_code=500, detail="Demo process exited immediately")
-
-    running_demos[slug] = {"pid": proc.pid, "port": port, "process": proc, "venv": venv_dir}
-    return {"status": "started", "port": port, "pid": proc.pid}
+        raise HTTPException(status_code=500, detail=f"启动失败: {e.stderr}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"启动失败: {str(e)}")
 
 
-# ── POST /api/demos/{slug}/stop ──────────────────────────────────────────────
 @app.post("/api/demos/{slug}/stop")
 def stop_demo(slug: str):
-    info = running_demos.pop(slug, None)
-    if info is None:
-        return {"status": "not_running"}
+    """停止一个 demo"""
+    if slug not in running_demos:
+        return {"message": "没有在运行"}
 
-    proc: subprocess.Popen = info.get("process")
-    if proc and proc.poll() is None:
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            proc.wait(timeout=5)
-        except Exception:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except Exception:
-                pass
-
-    # Clean up venv
-    venv = info.get("venv", "")
-    if venv and os.path.isdir(venv):
-        subprocess.run(["rm", "-rf", venv], capture_output=True)
-
-    return {"status": "stopped"}
-
-
-# ── GET /api/stats ────────────────────────────────────────────────────────────
-@app.get("/api/stats")
-def stats():
-    demos = _load_registry()
-    total = len(demos)
-
-    scores = []
-    trend = []
-    for d in sorted(demos, key=lambda x: x.get("created_at", "")):
-        s = d.get("score")
-        name = d.get("name", d.get("slug", "?"))
-        if s is not None:
-            scores.append(s)
-            trend.append({"name": name, "score": s})
+    info = running_demos[slug]
+    try:
+        if info["method"] == "docker":
+            container_name = f"demo-{slug}"
+            subprocess.run(["docker", "stop", container_name], capture_output=True, timeout=15)
+            subprocess.run(["docker", "rm", container_name], capture_output=True, timeout=15)
         else:
-            trend.append({"name": name, "score": None})
+            # 杀 python 进程树
+            pid = info["container_id"]
+            subprocess.run(["kill", "-9", pid], capture_output=True)
+            # 清理 venv
+            venv_dir = f"/tmp/demo_venv_{slug}"
+            subprocess.run(["rm", "-rf", venv_dir], capture_output=True)
+    except Exception:
+        pass
 
-    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
-    running_count = sum(1 for slug in running_demos if _get_demo_status(slug) == "running")
+    del running_demos[slug]
+    return {"message": "已停止"}
+
+
+@app.get("/api/stats")
+def get_stats():
+    """工厂统计数据"""
+    registry = load_registry()
+    total = len(registry)
+    scored = [d for d in registry if d.get("score") is not None]
+    avg_score = round(sum(d["score"] for d in scored) / len(scored), 1) if scored else 0
+
+    # 按时间排序的评分趋势（用于自进化曲线）
+    score_trend = []
+    for d in sorted(scored, key=lambda x: x.get("created_at", "")):
+        score_trend.append({
+            "name": d["name"],
+            "score": d["score"],
+            "date": d.get("created_at", "")[:10],
+        })
+
+    # 技术栈统计
+    tech_count = {}
+    for d in registry:
+        for t in d.get("tech_stack", []):
+            tech_count[t] = tech_count.get(t, 0) + 1
 
     return {
-        "total": total,
+        "total_demos": total,
         "avg_score": avg_score,
-        "running": running_count,
-        "trend": trend,
+        "running_count": len(running_demos),
+        "score_trend": score_trend,
+        "top_tech": sorted(tech_count.items(), key=lambda x: -x[1])[:10],
     }
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
+
+
+# === 集成时间线和竞技场 API ===
+
+@app.get("/api/timeline")
+def get_timeline():
+    """Agent 协作时间线（甘特图数据）"""
+    from timeline import get_all_timeline_data
+    return get_all_timeline_data()
+
+
+@app.get("/api/arena")
+def get_arena():
+    """竞技场对比数据"""
+    from arena import get_arena_data
+    return get_arena_data()
