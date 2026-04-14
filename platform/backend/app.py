@@ -133,26 +133,20 @@ def start_demo(slug: str):
         else:
             # 没有 Dockerfile，用 venv + python 启动
             venv_dir = f"/tmp/demo_venv_{slug}"
+            log_file = f"/tmp/demo_{slug}.log"
             setup_cmds = f"""
-                python3 -m venv {venv_dir} && \
-                {venv_dir}/bin/pip install -r {backend_dir}/requirements.txt -q && \
-                cd {backend_dir} && \
-                PORT={port} {venv_dir}/bin/python3 -c "
-import uvicorn
-import importlib.util
-import sys
-spec = importlib.util.spec_from_file_location('app', 'app.py')
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-uvicorn.run(mod.app, host='0.0.0.0', port={port})
-" &
+cd {backend_dir} && \
+python3 -m venv {venv_dir} && \
+{venv_dir}/bin/pip install -r requirements.txt -q && \
+{venv_dir}/bin/uvicorn app:app --host 0.0.0.0 --port {port} >> {log_file} 2>&1 &
+echo $!
             """
             result = subprocess.Popen(
                 ["bash", "-c", setup_cmds],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                stdout=open(log_file + ".setup", "w"),
+                stderr=subprocess.STDOUT,
             )
             container_id = str(result.pid)
-
         running_demos[slug] = {
             "port": port,
             "container_id": container_id,
@@ -228,19 +222,3 @@ def get_stats():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
-
-
-# === 集成时间线和竞技场 API ===
-
-@app.get("/api/timeline")
-def get_timeline():
-    """Agent 协作时间线（甘特图数据）"""
-    from timeline import get_all_timeline_data
-    return get_all_timeline_data()
-
-
-@app.get("/api/arena")
-def get_arena():
-    """竞技场对比数据"""
-    from arena import get_arena_data
-    return get_arena_data()
