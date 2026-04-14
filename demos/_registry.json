@@ -78,22 +78,24 @@
   {
     "name": "AI 时间序列预测",
     "slug": "ai-time-series-prediction",
-    "direction": "AI 时间序列预测",
+    "direction": "时间序列预测",
     "tech_stack": [
       "Python",
       "FastAPI",
-      "Prophet",
-      "PyTorch",
-      "scikit-learn",
-      "pandas"
+      "Google TimesFM",
+      "pandas",
+      "numpy"
     ],
-    "status": "in-progress",
-    "created_at": "2026-04-14T00:14:00+08:00",
-    "description": "上传历史时间序列数据，通过 AI 模型预测未来趋势并可视化展示",
+    "status": "evaluated",
+    "created_at": "2026-04-14T09:44:00+08:00",
+    "description": "上传时序 CSV 数据，AI 自动预测未来趋势，支持 Google TimesFM 预训练模型",
     "has_frontend": true,
     "has_backend": true,
-    "score": null,
-    "xhs_draft": null,
+    "score": 71,
+    "xhs_draft": {
+      "title": "上传一个CSV，AI帮你预测未来趋势📈",
+      "tags": ["#AI工具", "#时间序列预测", "#数据分析", "#Python", "#职场效率", "#AI预测", "#开发者工具"]
+    },
     "folder": "2026-04-14_ai-time-series-prediction"
   }
 ]
