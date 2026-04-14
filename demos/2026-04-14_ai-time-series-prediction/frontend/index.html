@@ -64,14 +64,10 @@ select option{background:var(--bg)}
 .btn-primary.loading::after{content:'';width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Model Cards */
-.model-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:640px){.model-list{grid-template-columns:1fr}}
-.model-card{padding:14px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
-.model-card:hover{border-color:var(--primary);background:rgba(59,130,246,.04)}
-.model-card.active{border-color:var(--primary);background:rgba(59,130,246,.1)}
-.model-card .mname{font-weight:600;margin-bottom:4px}
-.model-card .mdesc{font-size:.78rem;color:var(--text-sec)}
+/* Demo Buttons */
+.demo-btns{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.demo-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-sec);font-size:.85rem;cursor:pointer;transition:all .2s}
+.demo-btn:hover{border-color:var(--primary);color:var(--primary);background:rgba(59,130,246,.06)}
 
 /* Results */
 #results-section{display:none}
@@ -146,6 +142,14 @@ footer{text-align:center;padding:24px 0;color:var(--text-sec);font-size:.8rem}
         <table class="preview-table" id="previewTable"></table>
       </div>
     </div>
+    <div style="margin-top:16px;text-align:center">
+      <p style="font-size:.85rem;color:var(--text-sec);margin-bottom:8px">或者试试内置示例数据 👇</p>
+      <div class="demo-btns">
+        <button class="demo-btn" data-dataset="stock">📈 股票价格</button>
+        <button class="demo-btn" data-dataset="temperature">🌡️ 气温变化</button>
+        <button class="demo-btn" data-dataset="sales">🛒 电商销量</button>
+      </div>
+    </div>
   </div>
 
   <!-- Step 2: Config -->
@@ -160,10 +164,6 @@ footer{text-align:center;padding:24px 0;color:var(--text-sec);font-size:.8rem}
         <label>数值列（预测目标）</label>
         <select id="valueCol"></select>
       </div>
-    </div>
-    <div class="form-group">
-      <label>选择预测模型</label>
-      <div class="model-list" id="modelList"></div>
     </div>
     <div class="form-group">
       <label>预测步数</label>
@@ -197,13 +197,11 @@ footer{text-align:center;padding:24px 0;color:var(--text-sec);font-size:.8rem}
 <script>
 // ===================== CONFIG =====================
 const API_BASE = 'http://localhost:8000';
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 
 // ===================== STATE =====================
 let uploadedFileId = null;
-let selectedModel = null;
 let uploadData = null;
-let availableModels = [];
 
 // ===================== DOM =====================
 const $=s=>document.querySelector(s);
@@ -213,7 +211,6 @@ const fileInfo=$('#fileInfo'), fileName=$('#fileName'), removeFile=$('#removeFil
 const previewSection=$('#previewSection'), previewTable=$('#previewTable');
 const configCard=$('#config-card');
 const dateCol=$('#dateCol'), valueCol=$('#valueCol');
-const modelList=$('#modelList');
 const forecastSteps=$('#forecastSteps'), stepsVal=$('#stepsVal');
 const predictBtn=$('#predictBtn');
 const resultsSection=$('#results-section');
@@ -232,7 +229,7 @@ function generateMockCSVData(){
     rows.push([ds,Math.round(price*100)/100,Math.round(vol)]);
     d.setDate(d.getDate()+1);
   }
-  return {columns:cols,rows_count:365,date_column:'date',value_columns:['price','volume'],preview:rows.slice(0,5),file_id:'mock-uuid-001'};
+  return {columns:cols,rows_count:365,preview:rows.slice(0,5),file_id:'mock-uuid-001',status:'success'};
 }
 
 function generateMockPrediction(steps){
@@ -257,17 +254,10 @@ function generateMockPrediction(steps){
   return {historical_data:hist,predictions:preds,model_metrics:{mae:2.53,mape:0.021},status:'success'};
 }
 
-const MOCK_MODELS={models:[
-  {name:'prophet',display_name:'Prophet (自动)',description:'适合有季节性的数据'},
-  {name:'lstm',display_name:'LSTM (深度学习)',description:'适合复杂非线性模式'},
-  {name:'linear',display_name:'线性回归',description:'快速基线预测'}
-]};
-
 // ===================== API =====================
 async function apiGet(path){
   if(MOCK_MODE){
     if(path==='/health') return {status:'healthy'};
-    if(path==='/api/models') return MOCK_MODELS;
   }
   const res=await fetch(API_BASE+path);
   if(!res.ok) throw new Error(`请求失败: ${res.status}`);
@@ -289,7 +279,7 @@ async function apiUpload(file){
 async function apiPredict(params){
   if(MOCK_MODE){
     await new Promise(r=>setTimeout(r,1500));
-    return generateMockPrediction(params.forecast_steps);
+    return generateMockPrediction(params.horizon);
   }
   const res=await fetch(API_BASE+'/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(params)});
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||`预测失败: ${res.status}`);}
@@ -317,34 +307,6 @@ async function checkHealth(){
     statusDot.className='status-dot offline';
     statusText.textContent=MOCK_MODE?'Mock 模式':'API 离线';
   }
-}
-
-// ===================== MODELS =====================
-async function loadModels(){
-  try{
-    const r=await apiGet('/api/models');
-    availableModels=r.models;
-    renderModels();
-  }catch(e){
-    showToast('加载模型列表失败: '+e.message);
-  }
-}
-
-function renderModels(){
-  modelList.innerHTML='';
-  availableModels.forEach(m=>{
-    const card=document.createElement('div');
-    card.className='model-card';
-    card.dataset.name=m.name;
-    card.innerHTML=`<div class="mname">${m.display_name}</div><div class="mdesc">${m.description}</div>`;
-    card.onclick=()=>{
-      document.querySelectorAll('.model-card').forEach(c=>c.classList.remove('active'));
-      card.classList.add('active');
-      selectedModel=m.name;
-      checkReady();
-    };
-    modelList.appendChild(card);
-  });
 }
 
 // ===================== UPLOAD =====================
@@ -382,7 +344,7 @@ function resetUpload(){
   previewSection.style.display='none';
   configCard.style.display='none';
   resultsSection.style.display='none';
-  uploadedFileId=null;uploadData=null;selectedModel=null;
+  uploadedFileId=null;uploadData=null;
   fileInput.value='';
   predictBtn.disabled=true;
 }
@@ -405,19 +367,21 @@ function showPreview(data){
 function populateSelects(data){
   dateCol.innerHTML='';
   valueCol.innerHTML='';
-  // date column
-  data.columns.forEach(c=>{
-    const opt=document.createElement('option');
-    opt.value=c;opt.textContent=c;
-    if(c===data.date_column) opt.selected=true;
-    dateCol.appendChild(opt);
+  const cols=data.columns||[];
+  // Heuristic: first column that looks like a date/time goes to dateCol
+  cols.forEach(c=>{
+    const optD=document.createElement('option');
+    optD.value=c;optD.textContent=c;
+    dateCol.appendChild(optD);
+    const optV=document.createElement('option');
+    optV.value=c;optV.textContent=c;
+    valueCol.appendChild(optV);
   });
-  // value columns
-  data.value_columns.forEach(c=>{
-    const opt=document.createElement('option');
-    opt.value=c;opt.textContent=c;
-    valueCol.appendChild(opt);
-  });
+  // Auto-select: pick likely date column and first numeric-looking column
+  const dateLike=cols.find(c=>/date|time|日期|timestamp/i.test(c));
+  if(dateLike) dateCol.value=dateLike;
+  const valLike=cols.find(c=>c!==dateCol.value);
+  if(valLike) valueCol.value=valLike;
   checkReady();
 }
 
@@ -428,7 +392,7 @@ forecastSteps.addEventListener('input',()=>{
 
 // ===================== READY CHECK =====================
 function checkReady(){
-  predictBtn.disabled=!(uploadedFileId && selectedModel && valueCol.value);
+  predictBtn.disabled=!(uploadedFileId && valueCol.value);
 }
 dateCol.addEventListener('change',checkReady);
 valueCol.addEventListener('change',checkReady);
@@ -446,10 +410,9 @@ predictBtn.addEventListener('click',async()=>{
   try{
     const result=await apiPredict({
       file_id:uploadedFileId,
-      date_column:dateCol.value,
+      time_column:dateCol.value,
       value_column:valueCol.value,
-      model_type:selectedModel,
-      forecast_steps:parseInt(forecastSteps.value)
+      horizon:parseInt(forecastSteps.value)
     });
     renderResults(result);
   }catch(e){
@@ -467,31 +430,46 @@ function renderResults(data){
   resultsContent.style.display='block';
   resultsContent.classList.add('fade-in');
 
+  // Backend returns: predictions[], timestamps[], confidence_intervals[], model_info{}
+  const predictions=data.predictions||[];
+  const timestamps=data.timestamps||[];
+  const confidence=data.confidence_intervals||[];
+  const modelInfo=data.model_info||{};
+
+  const predLen=predictions.length;
+
   // Metrics
-  const mae=data.model_metrics.mae;
-  const mape=data.model_metrics.mape;
-  const histLen=data.historical_data.length;
-  const predLen=data.predictions.length;
   metricsGrid.innerHTML=`
-    <div class="metric"><div class="label">历史数据点</div><div class="value blue">${histLen}</div></div>
     <div class="metric"><div class="label">预测步数</div><div class="value purple">${predLen}</div></div>
-    <div class="metric"><div class="label">MAE</div><div class="value green">${mae.toFixed(2)}</div></div>
-    <div class="metric"><div class="label">MAPE</div><div class="value green">${(mape*100).toFixed(1)}%</div></div>
+    <div class="metric"><div class="label">模型</div><div class="value blue">${modelInfo.model||'TimesFM'}</div></div>
   `;
 
-  // Chart
-  const histDates=data.historical_data.map(r=>r[0]);
-  const histVals=data.historical_data.map(r=>r[1]);
-  const predDates=data.predictions.map(r=>r[0]);
-  const predVals=data.predictions.map(r=>r[1]);
-  const predLo=data.predictions.map(r=>r[2]);
-  const predHi=data.predictions.map(r=>r[3]);
+  // We need to fetch historical data from uploadData for the chart
+  // Use the upload preview or rely on backend chart data
+  // For now, show predictions with timestamps
+  const traces=[];
 
-  const traces=[
-    {x:histDates,y:histVals,name:'历史数据',type:'scatter',mode:'lines',line:{color:'#3b82f6',width:2}},
-    {x:predDates,y:predVals,name:'预测值',type:'scatter',mode:'lines',line:{color:'#ef4444',width:2,dash:'dot'}},
-    {x:predDates.concat([...predDates].reverse()),y:predHi.concat([...predLo].reverse()),fill:'toself',fillcolor:'rgba(239,68,68,0.1)',line:{color:'transparent'},name:'置信区间',showlegend:true,type:'scatter'}
-  ];
+  // If we have historical context from the predictions response, show it
+  if(data.historical_data){
+    const histDates=data.historical_data.map(r=>r[0]||r.date||r.timestamp);
+    const histVals=data.historical_data.map(r=>r[1]||r.value);
+    traces.push({x:histDates,y:histVals,name:'历史数据',type:'scatter',mode:'lines',line:{color:'#3b82f6',width:2}});
+  }
+
+  // Prediction line
+  traces.push({x:timestamps,y:predictions,name:'预测值',type:'scatter',mode:'lines',line:{color:'#ef4444',width:2,dash:'dot'}});
+
+  // Confidence intervals
+  if(confidence.length>0){
+    const lo=confidence.map(c=>Array.isArray(c)?c[0]:c.low);
+    const hi=confidence.map(c=>Array.isArray(c)?c[1]:c.high);
+    traces.push({
+      x:timestamps.concat([...timestamps].reverse()),
+      y:hi.concat([...lo].reverse()),
+      fill:'toself',fillcolor:'rgba(239,68,68,0.1)',line:{color:'transparent'},
+      name:'置信区间',showlegend:true,type:'scatter'
+    });
+  }
 
   const layout={
     paper_bgcolor:'#1e293b',
@@ -507,9 +485,70 @@ function renderResults(data){
   Plotly.newPlot(chartContainer,traces,layout,{responsive:true,displayModeBar:true,modeBarButtonsToRemove:['lasso2d','select2d']});
 }
 
+// ===================== DEMO DATA =====================
+document.querySelectorAll('.demo-btn').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const dataset=btn.dataset.dataset;
+    btn.textContent='加载中...';
+    btn.disabled=true;
+    try{
+      const data=await apiGet(`/api/demo-data/${dataset}`);
+      // Transform demo data response to match upload response shape for UI reuse
+      // Contract: { data: array, description: string, recommended_horizon: number, status: string }
+      // We need to build columns from data keys and show in config
+      const demoData=data.data||[];
+      if(!demoData.length) throw new Error('示例数据为空');
+
+      // Extract column names from first row (if objects) or use defaults
+      let cols;
+      let previewRows;
+      if(typeof demoData[0]==='object'&&!Array.isArray(demoData[0])){
+        cols=Object.keys(demoData[0]);
+        previewRows=demoData.slice(0,5).map(r=>cols.map(c=>r[c]));
+      }else{
+        cols=['timestamp','value'];
+        previewRows=demoData.slice(0,5);
+      }
+
+      const fakeUploadResult={
+        columns:cols,
+        rows_count:demoData.length,
+        preview:previewRows,
+        file_id:`demo-${dataset}`,
+        status:'success'
+      };
+      uploadData=fakeUploadResult;
+      uploadedFileId=fakeUploadResult.file_id;
+
+      // Update UI
+      fileName.textContent=`${data.description||dataset} (${demoData.length} 行)`;
+      fileInfo.style.display='block';
+      uploadZone.style.display='none';
+      showPreview(fakeUploadResult);
+      populateSelects(fakeUploadResult);
+
+      // Set recommended horizon
+      if(data.recommended_horizon){
+        forecastSteps.value=Math.min(365,Math.max(7,data.recommended_horizon));
+        stepsVal.textContent=forecastSteps.value+' 天';
+      }
+
+      configCard.style.display='block';
+      configCard.classList.add('fade-in');
+      showToast(`已加载示例：${data.description||dataset}`,'success');
+    }catch(e){
+      showToast('加载示例数据失败: '+e.message);
+    }finally{
+      // Restore button text
+      const labels={stock:'📈 股票价格',temperature:'🌡️ 气温变化',sales:'🛒 电商销量'};
+      btn.textContent=labels[dataset]||dataset;
+      btn.disabled=false;
+    }
+  });
+});
+
 // ===================== INIT =====================
 checkHealth();
-loadModels();
 setInterval(checkHealth,30000);
 </script>
 </body>
