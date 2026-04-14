@@ -2,12 +2,36 @@
   "name": "AI 时间序列预测",
   "slug": "ai-time-series-prediction",
   "direction": "时间序列预测",
-  "tech_stack": ["Python", "FastAPI", "Google TimesFM", "pandas", "numpy"],
-  "status": "in-progress",
+  "tech_stack": [
+    "Python",
+    "FastAPI",
+    "Google TimesFM",
+    "pandas",
+    "numpy"
+  ],
+  "status": "evaluated",
   "created_at": "2026-04-14T09:44:00+08:00",
   "description": "上传时序 CSV 数据，AI 自动预测未来趋势，支持 Google TimesFM 预训练模型",
   "has_frontend": true,
   "has_backend": true,
-  "score": null,
-  "xhs_draft": null
+  "score": 71,
+  "xhs_draft": {
+    "title": "上传一个CSV，AI帮你预测未来趋势📈",
+    "body": "朋友们，今天给你们看个好东西 🔥\n\n你有没有遇到过这种情况：老板让你预测下个月的销量，或者你想知道手里的股票未来走势，但完全不知道从哪下手？\n\n这个 AI 时间序列预测工具就是干这事的 👇\n\n📂 第一步：把你的历史数据（CSV格式）拖进去\n⚙️ 第二步：选一个预测模型（有三种可选：Prophet自动预测、LSTM深度学习、线性回归）\n📊 第三步：拖个滑块选你要预测多少天，点\"开始预测\"\n\n然后你就能看到一条蓝线（历史数据）和一条红虚线（AI预测）的交互式图表，还有置信区间！\n\n没有自己的数据也没关系，内置了三个示例数据集：\n🏦 模拟股票价格\n🌡️ 城市气温变化\n🛒 电商日销量\n\n技术上用了 Google TimesFM 预训练模型（也能用统计方法兜底），前端暗色主题颜值在线，拖拽上传体验流畅 ✨\n\n最关键的是：零门槛，不用写代码，传个表格就行。\n\n你会用它来预测什么？评论区聊聊 👇",
+    "tags": [
+      "#AI工具",
+      "#时间序列预测",
+      "#数据分析",
+      "#Python",
+      "#职场效率",
+      "#AI预测",
+      "#开发者工具"
+    ]
+  },
+  "score_detail": {
+    "ui": 26,
+    "functionality": 23,
+    "code_quality": 22
+  },
+  "eval_comment": "前后端各自完成度不错，但 API 契约未对齐：/api/models 未实现、/api/upload 响应缺字段、/api/predict 参数名不匹配，实际联调跑不通"
 }
