@@ -4,3 +4,9 @@
 **可复用**：① 异步任务架构（POST 创建 → task_id → GET 轮询）适用于所有耗时 AI 推理场景 ② 前端 Mock 模式自动检测（fetch /health 超时降级）③ toast 通知组件 ④ 暗色主题 CSS 变量体系
 **踩坑**：① load_image 里做了 ImageNet Normalize，模型内部又有 Normalization 层——导致双重标准化，标准做法是只在模型内部做一次 ② 预设风格定义了但没放实际图片文件，前端降级到 emoji 体验差 ③ Stable Diffusion 选项后端未实现但前端可选，应禁用或加提示
 **评分**：92/100
+
+## AI 时间序列预测 — 2026-04-14
+**技术点**：FastAPI + Plotly.js 交互图表 + Google TimesFM 预训练模型（统计回退兜底）+ 多编码 CSV 解析 + 内置示例数据集
+**可复用**：统计回退预测方法（线性趋势+季节性分解）可用于任何时序类 Demo；多编码 CSV 解析逻辑；Plotly 暗色主题图表配置；拖拽上传+骨架屏加载的前端模式
+**踩坑**：前后端 API 参数名不一致（time_column vs date_column, horizon vs forecast_steps）导致联调失败——这个问题在 Mock 模式下完全隐藏，审查流程未做真实联调测试。教训：**审查必须关闭 Mock 模式做端到端测试**
+**评分**：71/100
