@@ -1,0 +1,13 @@
+{
+  "name": "AI 文档智能问答（RAG）",
+  "slug": "rag-doc-qa",
+  "direction": "RAG 检索增强生成",
+  "tech_stack": ["Python", "FastAPI", "LangChain", "ChromaDB", "Sentence-Transformers"],
+  "status": "in-progress",
+  "created_at": "2026-04-16T17:14:00+08:00",
+  "description": "上传 PDF/TXT/DOCX 文档，AI 实时问答并引用原文来源",
+  "has_frontend": true,
+  "has_backend": true,
+  "score": null,
+  "xhs_draft": null
+}
