@@ -2,12 +2,38 @@
   "name": "RAG 智能知识库问答",
   "slug": "rag-knowledge-qa",
   "direction": "RAG / 检索增强生成",
-  "tech_stack": ["Python", "FastAPI", "ChromaDB", "httpx", "pypdf", "python-docx"],
-  "status": "in-progress",
+  "tech_stack": [
+    "Python",
+    "FastAPI",
+    "ChromaDB",
+    "httpx",
+    "pypdf",
+    "python-docx"
+  ],
+  "status": "completed",
   "created_at": "2026-04-19T17:42:00+08:00",
   "description": "上传文档即刻对话，基于 RAG 流程的智能知识库问答系统",
   "has_frontend": true,
   "has_backend": true,
-  "score": null,
-  "xhs_draft": null
+  "score": 95,
+  "xhs_draft": {
+    "title": "上传任何文档，AI 秒懂全部内容！这个工具太香了",
+    "body": "你有没有过这样的痛苦？📄\n\n一份 50 页的 PDF 报告摆在面前，老板让你明天汇报重点。翻来翻去找不到关键信息，加班到深夜……\n\n今天分享一个 AI 神器——RAG 智能知识库，上传文档就能直接对话问答！\n\n🤖 它怎么工作的？\n简单说就是三步：\n1️⃣ 你上传文档（PDF、Word、TXT 都行）\n2️⃣ AI 把文档切成小块，存进「知识库」\n3️⃣ 你用大白话提问，AI 从知识库里找到最相关的内容，给你精准回答\n\n而且每个回答都会标注「参考来源」，告诉你答案出自哪个文档的哪个段落，完全可以溯源验证！不是 AI 瞎编的 🎯\n\n💡 真实使用场景\n• 读完一份合同？扔进去问「有哪些违约条款」\n• 看不完的论文？问「核心结论是什么」\n• 公司制度手册？问「年假怎么算」\n• 产品需求文档？问「优先级最高的功能是哪个」\n\n📱 操作体验\n左边管理你的文档，右边直接对话。界面长得跟 ChatGPT 差不多，上手零门槛。还能调参数——想要更精确的回答调低温度，想要更有创意调高。\n\n最关键的是：你的文档不会被发到任何地方，数据安全有保障 🔒\n\n说真的，用了这个之后再也不想手动翻文档了。效率直接翻倍。\n\n你平时最头疼读什么类型的文档？评论区聊聊 👇",
+    "tags": [
+      "#AI工具",
+      "#RAG",
+      "#智能问答",
+      "#效率工具",
+      "#AI办公",
+      "#文档管理",
+      "#ChatGPT替代",
+      "#职场效率"
+    ]
+  },
+  "score_detail": {
+    "ui": 35,
+    "functionality": 37,
+    "code_quality": 23
+  },
+  "eval_comment": "高质量 RAG Demo，零本地模型、全 API 调用设计优秀，6 个端点全部通过实测，UI 交互完整流畅。"
 }
