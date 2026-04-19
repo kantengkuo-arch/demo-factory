@@ -1,0 +1,8 @@
+# RAG 智能知识库问答系统 — 后端依赖
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+chromadb>=0.4.0
+httpx>=0.25.0
+pypdf>=3.0.0
+python-docx>=1.0.0

@@ -1,0 +1,13 @@
+{
+  "name": "RAG 智能知识库问答",
+  "slug": "rag-knowledge-qa",
+  "direction": "RAG / 检索增强生成",
+  "tech_stack": ["Python", "FastAPI", "ChromaDB", "httpx", "pypdf", "python-docx"],
+  "status": "in-progress",
+  "created_at": "2026-04-19T17:42:00+08:00",
+  "description": "上传文档即刻对话，基于 RAG 流程的智能知识库问答系统",
+  "has_frontend": true,
+  "has_backend": true,
+  "score": null,
+  "xhs_draft": null
+}
