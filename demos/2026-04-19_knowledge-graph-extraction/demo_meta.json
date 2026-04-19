@@ -1,0 +1,13 @@
+{
+  "name": "AI 知识图谱抽取",
+  "slug": "knowledge-graph-extraction",
+  "direction": "NLP / 知识图谱",
+  "tech_stack": ["Python", "FastAPI", "networkx", "httpx", "LLM API"],
+  "status": "in-progress",
+  "created_at": "2026-04-19T19:57:00+08:00",
+  "description": "输入文本自动抽取实体和关系，生成交互式知识图谱",
+  "has_frontend": true,
+  "has_backend": true,
+  "score": null,
+  "xhs_draft": null
+}

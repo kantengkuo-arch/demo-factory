@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KnowledgeGraph — AI 知识图谱抽取</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0f172a;--card:#1e293b;--border:#334155;
+  --primary:#8b5cf6;--primary-hover:#a78bfa;--primary-dim:rgba(139,92,246,.12);
+  --text:#e2e8f0;--text-sec:#94a3b8;--text-dim:#64748b;
+  --success:#10b981;--error:#ef4444;--warning:#f59e0b;
+  --c-person:#3b82f6;--c-org:#f59e0b;--c-location:#10b981;--c-event:#ef4444;--c-concept:#8b5cf6;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* Header */
+.header{height:54px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(15,23,42,.92);backdrop-filter:blur(12px);flex-shrink:0;z-index:50}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--text-dim);font-size:12px}
+.status-badge{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--card)}
+.status-dot{width:7px;height:7px;border-radius:50%}
+.status-dot.online{background:var(--success);box-shadow:0 0 6px var(--success)}
+.status-dot.offline{background:var(--error);box-shadow:0 0 6px var(--error)}
+
+/* Layout */
+.app-body{flex:1;display:flex;overflow:hidden}
+
+/* Left Panel */
+.left-panel{width:380px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--card)}
+.panel-section{padding:16px;border-bottom:1px solid var(--border)}
+.panel-title{font-size:13px;font-weight:700;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+textarea.text-input{width:100%;height:220px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;resize:none;outline:none;line-height:1.7;transition:border-color .2s}
+textarea.text-input:focus{border-color:var(--primary)}
+textarea.text-input::placeholder{color:var(--text-dim)}
+.char-count{text-align:right;font-size:11px;color:var(--text-dim);margin-top:6px}
+
+/* Controls */
+.ctrl-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.ctrl-row label{font-size:12px;color:var(--text-sec);white-space:nowrap}
+.ctrl-row select,.ctrl-row input[type="number"]{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;outline:none;flex:1}
+.entity-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.entity-chip{padding:5px 12px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all .2s;user-select:none}
+.entity-chip.active{opacity:1}.entity-chip:not(.active){opacity:.4}
+.chip-PERSON{color:var(--c-person);border-color:var(--c-person);background:rgba(59,130,246,.1)}
+.chip-ORGANIZATION{color:var(--c-org);border-color:var(--c-org);background:rgba(245,158,11,.1)}
+.chip-LOCATION{color:var(--c-location);border-color:var(--c-location);background:rgba(16,185,129,.1)}
+.chip-EVENT{color:var(--c-event);border-color:var(--c-event);background:rgba(239,68,68,.1)}
+.chip-CONCEPT{color:var(--c-concept);border-color:var(--c-concept);background:rgba(139,92,246,.1)}
+
+.extract-btn{width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:8px}
+.extract-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(139,92,246,.4)}
+.extract-btn:disabled{opacity:.45;cursor:not-allowed}
+.extract-btn .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:none}
+.extract-btn.loading .spinner{display:block}
+.extract-btn.loading .btn-label{display:none}
+
+/* Stats Bar */
+.stats-bar{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.stat-item{flex:1;padding:10px;text-align:center;background:var(--card);font-size:11px;color:var(--text-sec)}
+.stat-item .stat-num{font-size:20px;font-weight:800;color:var(--text);display:block;margin-bottom:2px}
+
+/* Detail Panel */
+.detail-panel{flex:1;overflow-y:auto;padding:16px}
+.detail-panel::-webkit-scrollbar{width:4px}
+.detail-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.detail-empty{text-align:center;padding:40px 16px;color:var(--text-dim);font-size:13px}
+.detail-card{padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);margin-bottom:10px;animation:fadeIn .3s ease}
+.detail-card h4{font-size:14px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.detail-card .type-tag{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.detail-card p{font-size:12px;color:var(--text-sec);line-height:1.6;margin-top:4px}
+.detail-card .conf{font-size:11px;color:var(--text-dim);margin-top:6px}
+.detail-card .evidence{font-size:11px;color:var(--text-sec);background:rgba(139,92,246,.08);padding:8px 10px;border-radius:6px;margin-top:8px;border-left:3px solid var(--primary);line-height:1.5}
+
+/* Graph Area */
+.graph-area{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.graph-area svg{width:100%;height:100%}
+.graph-toolbar{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:10}
+.graph-toolbar button{width:36px;height:36px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-sec);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.graph-toolbar button:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-dim)}
+.graph-legend{position:absolute;bottom:12px;left:12px;display:flex;gap:12px;padding:10px 16px;background:rgba(30,41,59,.9);border:1px solid var(--border);border-radius:10px;z-index:10}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.graph-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text-dim)}
+.graph-placeholder .gp-icon{font-size:72px;margin-bottom:16px;opacity:.3}
+.graph-placeholder p{font-size:15px;line-height:1.7}
+
+/* Export Bar */
+.export-bar{position:absolute;bottom:12px;right:12px;display:flex;gap:6px;z-index:10}
+.export-btn{padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text-sec);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:5px}
+.export-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+/* Node tooltip */
+.node-tooltip{position:absolute;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;pointer-events:none;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:260px;display:none}
+.node-tooltip .tt-name{font-weight:700;margin-bottom:4px}
+.node-tooltip .tt-type{font-size:10px;opacity:.7;margin-bottom:6px}
+.node-tooltip .tt-desc{color:var(--text-sec);line-height:1.5}
+
+/* Toast */
+.toast-container{position:fixed;top:16px;right:16px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;animation:slideIn .3s ease;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:380px}
+.toast.success{background:#065f46;color:#6ee7b7;border:1px solid #10b981}
+.toast.error{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444}
+.toast.info{background:#1e3a5f;color:#93c5fd;border:1px solid #3b82f6}
+
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+
+/* Graph link/node styles */
+.graph-link{fill:none;stroke-opacity:.5}
+.graph-link:hover{stroke-opacity:1}
+.graph-node{cursor:pointer}
+.graph-node circle{stroke-width:2px;transition:r .2s}
+.graph-node text{font-size:11px;fill:var(--text);pointer-events:none;font-weight:600;text-anchor:middle}
+.graph-node.highlight circle{stroke-width:3px;filter:drop-shadow(0 0 8px currentColor)}
+.graph-node.dimmed{opacity:.2}
+.graph-link.dimmed{opacity:.05}
+.graph-link.highlight{stroke-opacity:1;stroke-width:2.5px}
+
+@media(max-width:900px){
+  .app-body{flex-direction:column}
+  .left-panel{width:100%;max-height:45vh;border-right:none;border-bottom:1px solid var(--border)}
+  textarea.text-input{height:100px}
+  .graph-area{min-height:50vh}
+  .tagline{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="node-tooltip" id="nodeTooltip"></div>
+
+<header class="header">
+  <div class="header-left">
+    <span class="logo">🕸️ KnowledgeGraph</span>
+    <span class="tagline">AI 知识图谱抽取 · 输入文本 → 生成关系网络</span>
+  </div>
+  <div class="status-badge">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">检测中...</span>
+  </div>
+</header>
+
+<div class="app-body">
+  <!-- Left Panel -->
+  <div class="left-panel">
+    <div class="panel-section">
+      <div class="panel-title">📝 输入文本</div>
+      <textarea class="text-input" id="textInput" placeholder="粘贴一段新闻、百科、技术文档...&#10;&#10;示例：苹果公司由史蒂夫·乔布斯、史蒂夫·沃兹尼亚克和罗恩·韦恩于1976年在加利福尼亚州创立。蒂姆·库克于2011年接替乔布斯担任CEO。公司总部位于库比蒂诺的Apple Park。" oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span> 字符</div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-title">⚙️ 抽取设置</div>
+      <div class="panel-title" style="font-size:11px;margin-bottom:8px;text-transform:none;letter-spacing:0">实体类型筛选</div>
+      <div class="entity-chips" id="entityChips"></div>
+      <div class="ctrl-row">
+        <label>最大实体数</label>
+        <input type="number" id="maxEntities" value="50" min="5" max="200" style="width:70px">
+      </div>
+      <div class="ctrl-row">
+        <label>置信度阈值</label>
+        <input type="number" id="confThreshold" value="0.7" min="0" max="1" step="0.05" style="width:70px">
+      </div>
+      <button class="extract-btn" id="extractBtn" onclick="extractKG()" disabled>
+        <span class="spinner"></span>
+        <span class="btn-label">🔍 一键抽取知识图谱</span>
+      </button>
+    </div>
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat-item"><span class="stat-num" id="statEntities">0</span>实体</div>
+      <div class="stat-item"><span class="stat-num" id="statRelations">0</span>关系</div>
+      <div class="stat-item"><span class="stat-num" id="statTime">0</span>秒</div>
+    </div>
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-empty" id="detailEmpty">👆 输入文本并点击抽取<br>图谱节点详情将在这里显示</div>
+    </div>
+  </div>
+
+  <!-- Graph Area -->
+  <div class="graph-area" id="graphArea">
+    <div class="graph-placeholder" id="graphPlaceholder">
+      <div><div class="gp-icon">🕸️</div><p>在左侧输入文本<br>点击「一键抽取」生成知识图谱</p></div>
+    </div>
+    <svg id="graphSvg"></svg>
+    <div class="graph-toolbar" id="graphToolbar" style="display:none">
+      <button onclick="zoomGraph(1.3)" title="放大">＋</button>
+      <button onclick="zoomGraph(0.7)" title="缩小">－</button>
+      <button onclick="resetZoom()" title="复位">⟲</button>
+      <button onclick="toggleLabels()" title="标签">Aa</button>
+    </div>
+    <div class="graph-legend" id="graphLegend" style="display:none"></div>
+    <div class="export-bar" id="exportBar" style="display:none">
+      <button class="export-btn" onclick="exportGraph('json')">📄 JSON</button>
+      <button class="export-btn" onclick="exportGraph('csv')">📊 CSV</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+// ============== CONFIG ==============
+var API_BASE = 'http://localhost:8000';
+var MOCK_MODE = false;
+
+// ============== STATE ==============
+var graphData = { entities: [], relations: [] };
+var simulation = null;
+var svgGroup = null;
+var zoomBehavior = null;
+var showLabels = true;
+var selectedNode = null;
+var activeEntityTypes = ['PERSON','ORGANIZATION','LOCATION','EVENT','CONCEPT'];
+
+var TYPE_COLORS = {
+  PERSON: '#3b82f6', ORGANIZATION: '#f59e0b', LOCATION: '#10b981',
+  EVENT: '#ef4444', CONCEPT: '#8b5cf6'
+};
+var TYPE_LABELS = {
+  PERSON: '👤 人物', ORGANIZATION: '🏢 组织', LOCATION: '📍 地点',
+  EVENT: '📅 事件', CONCEPT: '💡 概念'
+};
+
+// ============== MOCK ==============
+var MOCK_TEXT = '苹果公司由史蒂夫·乔布斯于1976年在加利福尼亚州创立';
+function mockExtract(text) {
+  return new Promise(function(r) { setTimeout(function() {
+    r({
+      entities: [
+        {id:'e1',name:'苹果公司',type:'ORGANIZATION',mentions:3,confidence:0.95,description:'全球领先的科技公司'},
+        {id:'e2',name:'史蒂夫·乔布斯',type:'PERSON',mentions:2,confidence:0.98,description:'苹果公司联合创始人'},
+        {id:'e3',name:'史蒂夫·沃兹尼亚克',type:'PERSON',mentions:1,confidence:0.92,description:'苹果公司联合创始人'},
+        {id:'e4',name:'罗恩·韦恩',type:'PERSON',mentions:1,confidence:0.85,description:'苹果公司早期联合创始人'},
+        {id:'e5',name:'蒂姆·库克',type:'PERSON',mentions:1,confidence:0.96,description:'苹果公司现任CEO'},
+        {id:'e6',name:'加利福尼亚州',type:'LOCATION',mentions:1,confidence:0.93,description:'美国西部的州'},
+        {id:'e7',name:'库比蒂诺',type:'LOCATION',mentions:1,confidence:0.90,description:'苹果公司总部所在城市'},
+        {id:'e8',name:'Apple Park',type:'LOCATION',mentions:1,confidence:0.88,description:'苹果公司总部园区'},
+        {id:'e9',name:'1976年创立',type:'EVENT',mentions:1,confidence:0.91,description:'苹果公司成立事件'},
+        {id:'e10',name:'CEO继任',type:'EVENT',mentions:1,confidence:0.87,description:'2011年蒂姆·库克接任CEO'}
+      ],
+      relations: [
+        {id:'r1',source_entity_id:'e2',target_entity_id:'e1',relation_type:'founded',confidence:0.96,evidence_text:'由史蒂夫·乔布斯创立'},
+        {id:'r2',source_entity_id:'e3',target_entity_id:'e1',relation_type:'founded',confidence:0.93,evidence_text:'沃兹尼亚克共同创立'},
+        {id:'r3',source_entity_id:'e4',target_entity_id:'e1',relation_type:'founded',confidence:0.82,evidence_text:'罗恩·韦恩共同创立'},
+        {id:'r4',source_entity_id:'e5',target_entity_id:'e1',relation_type:'works_at',confidence:0.95,evidence_text:'蒂姆·库克担任CEO'},
+        {id:'r5',source_entity_id:'e1',target_entity_id:'e6',relation_type:'founded_in',confidence:0.91,evidence_text:'在加利福尼亚州创立'},
+        {id:'r6',source_entity_id:'e1',target_entity_id:'e7',relation_type:'located_in',confidence:0.90,evidence_text:'总部位于库比蒂诺'},
+        {id:'r7',source_entity_id:'e8',target_entity_id:'e7',relation_type:'located_in',confidence:0.88,evidence_text:'Apple Park位于库比蒂诺'},
+        {id:'r8',source_entity_id:'e5',target_entity_id:'e2',relation_type:'succeeded',confidence:0.87,evidence_text:'库克接替乔布斯'},
+        {id:'r9',source_entity_id:'e9',target_entity_id:'e1',relation_type:'relates_to',confidence:0.89,evidence_text:'1976年创立苹果公司'},
+        {id:'r10',source_entity_id:'e10',target_entity_id:'e5',relation_type:'relates_to',confidence:0.86,evidence_text:'2011年CEO继任事件'}
+      ],
+      graph_stats:{total_entities:10,total_relations:10,processing_time:2.3},
+      status:'success'
+    });
+  }, 2500); });
+}
+
+function mockMetrics() {
+  return Promise.resolve({
+    metrics:{density:0.22,average_degree:2.0,connected_components:1,
+      central_entities:[{entity_id:'e1',entity_name:'苹果公司',centrality_score:0.85}]},
+    status:'success'
+  });
+}
+
+function mockEntityTypes() {
+  return Promise.resolve({
+    entity_types:[
+      {type:'PERSON',description:'人物、姓名',examples:['乔布斯','马云']},
+      {type:'ORGANIZATION',description:'组织、公司、机构',examples:['苹果公司','清华大学']},
+      {type:'LOCATION',description:'地点、地区',examples:['加利福尼亚','北京']},
+      {type:'EVENT',description:'事件、活动',examples:['创立','发布会']},
+      {type:'CONCEPT',description:'概念、技术',examples:['人工智能','区块链']}
+    ],status:'success'
+  });
+}
+
+// ============== API ==============
+async function apiHealth() {
+  if (MOCK_MODE) return {status:'healthy'};
+  var res = await fetch(API_BASE+'/health'); return await res.json();
+}
+
+async function apiExtract(text, types, maxEnts, confThresh) {
+  if (MOCK_MODE) return mockExtract(text);
+  var res = await fetch(API_BASE+'/api/extract-knowledge-graph', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:text, entity_types:types, max_entities:maxEnts, confidence_threshold:confThresh})
+  });
+  if (!res.ok) throw new Error('抽取失败: '+res.status);
+  return await res.json();
+}
+
+async function apiMetrics(entities, relations) {
+  if (MOCK_MODE) return mockMetrics();
+  var res = await fetch(API_BASE+'/api/analyze-graph-metrics', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({entities:entities, relations:relations})
+  });
+  if (!res.ok) throw new Error('分析失败');
+  return await res.json();
+}
+
+async function apiEntityTypes() {
+  if (MOCK_MODE) return mockEntityTypes();
+  var res = await fetch(API_BASE+'/api/entity-types');
+  if (!res.ok) throw new Error('获取类型失败');
+  return await res.json();
+}
+
+async function apiExport(entities, relations, format) {
+  if (MOCK_MODE) {
+    var blob = new Blob([JSON.stringify({entities:entities,relations:relations},null,2)],{type:'application/json'});
+    return {download_url:URL.createObjectURL(blob), filename:'knowledge_graph.'+format, status:'success'};
+  }
+  var res = await fetch(API_BASE+'/api/export-graph', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({entities:entities, relations:relations, format:format})
+  });
+  if (!res.ok) throw new Error('导出失败');
+  return await res.json();
+}
+
+// ============== TOAST ==============
+function showToast(msg, type) {
+  type = type||'info';
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div'); t.className='toast '+type;
+  var icons={success:'✅',error:'❌',info:'ℹ️'};
+  t.innerHTML='<span>'+(icons[type]||'')+'</span><span>'+msg+'</span>';
+  c.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(40px)';setTimeout(function(){t.remove()},300)},3500);
+}
+
+// ============== HEALTH ==============
+async function checkHealth() {
+  var dot=document.getElementById('statusDot'), txt=document.getElementById('statusText');
+  try {
+    var d=await apiHealth();
+    dot.className='status-dot '+(d.status==='healthy'?'online':'offline');
+    txt.textContent=d.status==='healthy'?(MOCK_MODE?'Mock 模式':'API 在线'):'API 异常';
+  } catch(e) { dot.className='status-dot offline'; txt.textContent='API 离线'; }
+}
+
+// ============== UI HELPERS ==============
+function updateCharCount() {
+  var v = document.getElementById('textInput').value;
+  document.getElementById('charCount').textContent = v.length;
+  document.getElementById('extractBtn').disabled = !v.trim();
+}
+
+function renderEntityChips() {
+  var all = ['PERSON','ORGANIZATION','LOCATION','EVENT','CONCEPT'];
+  var html = all.map(function(t) {
+    var active = activeEntityTypes.indexOf(t) !== -1;
+    return '<span class="entity-chip chip-'+t+(active?' active':'')+'" onclick="toggleEntityType(\''+t+'\')">'+(TYPE_LABELS[t]||t)+'</span>';
+  }).join('');
+  document.getElementById('entityChips').innerHTML = html;
+}
+
+function toggleEntityType(t) {
+  var idx = activeEntityTypes.indexOf(t);
+  if (idx===-1) activeEntityTypes.push(t); else if (activeEntityTypes.length>1) activeEntityTypes.splice(idx,1);
+  renderEntityChips();
+  if (graphData.entities.length) filterAndRender();
+}
+
+function showDetail(entity) {
+  selectedNode = entity;
+  var panel = document.getElementById('detailPanel');
+  var rels = graphData.relations.filter(function(r){ return r.source_entity_id===entity.id || r.target_entity_id===entity.id; });
+  var color = TYPE_COLORS[entity.type]||'#8b5cf6';
+
+  var html = '<div class="detail-card"><h4><span style="color:'+color+'">'+(TYPE_LABELS[entity.type]||entity.type).split(' ')[0]+'</span> '+entity.name+'<span class="type-tag" style="background:'+color+'22;color:'+color+'">'+entity.type+'</span></h4>';
+  html += '<p>'+entity.description+'</p>';
+  html += '<div class="conf">置信度 '+(entity.confidence*100).toFixed(0)+'% · 出现 '+entity.mentions+' 次</div></div>';
+
+  rels.forEach(function(r) {
+    var other = r.source_entity_id===entity.id
+      ? graphData.entities.find(function(e){return e.id===r.target_entity_id})
+      : graphData.entities.find(function(e){return e.id===r.source_entity_id});
+    if (!other) return;
+    var dir = r.source_entity_id===entity.id ? '→' : '←';
+    html += '<div class="detail-card"><h4>'+dir+' '+other.name+' <span class="type-tag" style="background:'+color+'22;color:'+color+'">'+r.relation_type+'</span></h4>';
+    html += '<div class="conf">置信度 '+(r.confidence*100).toFixed(0)+'%</div>';
+    if (r.evidence_text) html += '<div class="evidence">「'+r.evidence_text+'」</div>';
+    html += '</div>';
+  });
+
+  panel.innerHTML = html;
+}

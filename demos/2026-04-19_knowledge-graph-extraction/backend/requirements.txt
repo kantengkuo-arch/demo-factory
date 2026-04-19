@@ -1,0 +1,5 @@
+# AI 知识图谱抽取系统 — 后端依赖
+fastapi>=0.100.0
+uvicorn>=0.23.0
+httpx>=0.25.0
+networkx>=3.0
