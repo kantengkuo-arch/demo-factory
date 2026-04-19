@@ -394,3 +394,249 @@ function showDetail(entity) {
 
   panel.innerHTML = html;
 }
+
+// ============== D3 FORCE GRAPH ==============
+function initGraph() {
+  var svg = d3.select('#graphSvg');
+  svg.selectAll('*').remove();
+
+  var defs = svg.append('defs');
+  Object.keys(TYPE_COLORS).forEach(function(t) {
+    defs.append('marker').attr('id','arrow-'+t).attr('viewBox','0 -5 10 10')
+      .attr('refX',20).attr('refY',0).attr('markerWidth',6).attr('markerHeight',6)
+      .attr('orient','auto')
+      .append('path').attr('d','M0,-5L10,0L0,5').attr('fill',TYPE_COLORS[t]).attr('opacity',0.6);
+  });
+
+  svgGroup = svg.append('g');
+  zoomBehavior = d3.zoom().scaleExtent([0.2, 5]).on('zoom', function(event) {
+    svgGroup.attr('transform', event.transform);
+  });
+  svg.call(zoomBehavior);
+}
+
+function renderGraph(entities, relations) {
+  document.getElementById('graphPlaceholder').style.display = 'none';
+  document.getElementById('graphToolbar').style.display = '';
+  document.getElementById('graphLegend').style.display = '';
+  document.getElementById('exportBar').style.display = '';
+
+  initGraph();
+
+  var area = document.getElementById('graphArea');
+  var w = area.clientWidth, h = area.clientHeight;
+
+  // Build node/link data
+  var nodeMap = {};
+  var nodes = entities.map(function(e) {
+    var n = {id:e.id, name:e.name, type:e.type, mentions:e.mentions, confidence:e.confidence, description:e.description, radius: Math.max(12, Math.min(30, 8 + e.mentions * 4))};
+    nodeMap[e.id] = n;
+    return n;
+  });
+
+  var links = relations.filter(function(r) {
+    return nodeMap[r.source_entity_id] && nodeMap[r.target_entity_id];
+  }).map(function(r) {
+    return {source:r.source_entity_id, target:r.target_entity_id, type:r.relation_type, confidence:r.confidence, evidence:r.evidence_text};
+  });
+
+  // Simulation
+  simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(function(d){return d.id}).distance(120))
+    .force('charge', d3.forceManyBody().strength(-300))
+    .force('center', d3.forceCenter(w/2, h/2))
+    .force('collision', d3.forceCollide().radius(function(d){return d.radius+10}));
+
+  // Links
+  var link = svgGroup.append('g').selectAll('line').data(links).enter().append('line')
+    .attr('class','graph-link')
+    .attr('stroke', function(d) {
+      var src = nodeMap[typeof d.source==='object'?d.source.id:d.source];
+      return src ? TYPE_COLORS[src.type]||'#64748b' : '#64748b';
+    })
+    .attr('stroke-width', function(d){return 1+d.confidence*2})
+    .attr('marker-end', function(d) {
+      var src = nodeMap[typeof d.source==='object'?d.source.id:d.source];
+      return src ? 'url(#arrow-'+src.type+')' : '';
+    });
+
+  // Link labels
+  var linkLabel = svgGroup.append('g').selectAll('text').data(links).enter().append('text')
+    .attr('font-size', 9).attr('fill', '#64748b').attr('text-anchor','middle')
+    .text(function(d){return d.type});
+
+  // Nodes
+  var node = svgGroup.append('g').selectAll('g').data(nodes).enter().append('g')
+    .attr('class','graph-node')
+    .call(d3.drag().on('start',dragStart).on('drag',dragging).on('end',dragEnd));
+
+  node.append('circle')
+    .attr('r', function(d){return d.radius})
+    .attr('fill', function(d){return TYPE_COLORS[d.type]||'#8b5cf6'})
+    .attr('stroke', function(d){return TYPE_COLORS[d.type]||'#8b5cf6'})
+    .attr('fill-opacity', 0.2);
+
+  node.append('text').attr('dy', function(d){return d.radius+14})
+    .text(function(d){return d.name})
+    .attr('class','node-label');
+
+  // Interactions
+  node.on('mouseover', function(event, d) {
+    var tt = document.getElementById('nodeTooltip');
+    tt.innerHTML = '<div class="tt-name">'+d.name+'</div><div class="tt-type">'+(TYPE_LABELS[d.type]||d.type)+' · 置信度 '+(d.confidence*100).toFixed(0)+'%</div><div class="tt-desc">'+d.description+'</div>';
+    tt.style.display = 'block';
+    tt.style.left = (event.pageX+12)+'px';
+    tt.style.top = (event.pageY-12)+'px';
+
+    // Highlight connected
+    var connected = {};
+    connected[d.id] = true;
+    links.forEach(function(l) {
+      var sid = typeof l.source==='object'?l.source.id:l.source;
+      var tid = typeof l.target==='object'?l.target.id:l.target;
+      if (sid===d.id) connected[tid]=true;
+      if (tid===d.id) connected[sid]=true;
+    });
+    node.classed('highlight', function(n){return n.id===d.id})
+        .classed('dimmed', function(n){return !connected[n.id]});
+    link.classed('highlight', function(l){
+      var sid=typeof l.source==='object'?l.source.id:l.source;
+      var tid=typeof l.target==='object'?l.target.id:l.target;
+      return sid===d.id||tid===d.id;
+    }).classed('dimmed', function(l){
+      var sid=typeof l.source==='object'?l.source.id:l.source;
+      var tid=typeof l.target==='object'?l.target.id:l.target;
+      return sid!==d.id&&tid!==d.id;
+    });
+  }).on('mouseout', function() {
+    document.getElementById('nodeTooltip').style.display='none';
+    node.classed('highlight',false).classed('dimmed',false);
+    link.classed('highlight',false).classed('dimmed',false);
+  }).on('click', function(event, d) {
+    var ent = graphData.entities.find(function(e){return e.id===d.id});
+    if (ent) showDetail(ent);
+  });
+
+  // Tick
+  simulation.on('tick', function() {
+    link.attr('x1',function(d){return d.source.x}).attr('y1',function(d){return d.source.y})
+        .attr('x2',function(d){return d.target.x}).attr('y2',function(d){return d.target.y});
+    linkLabel.attr('x',function(d){return(d.source.x+d.target.x)/2}).attr('y',function(d){return(d.source.y+d.target.y)/2-4});
+    node.attr('transform', function(d){return 'translate('+d.x+','+d.y+')'});
+  });
+
+  // Legend
+  var legend = document.getElementById('graphLegend');
+  var types = {};
+  entities.forEach(function(e){types[e.type]=true});
+  legend.innerHTML = Object.keys(types).map(function(t){
+    return '<div class="legend-item"><span class="legend-dot" style="background:'+TYPE_COLORS[t]+'"></span>'+(TYPE_LABELS[t]||t)+'</div>';
+  }).join('');
+}
+
+function dragStart(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; }
+function dragging(event, d) { d.fx=event.x; d.fy=event.y; }
+function dragEnd(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }
+
+function zoomGraph(factor) {
+  var svg = d3.select('#graphSvg');
+  svg.transition().duration(300).call(zoomBehavior.scaleBy, factor);
+}
+function resetZoom() {
+  var svg = d3.select('#graphSvg');
+  var w = document.getElementById('graphArea').clientWidth;
+  var h = document.getElementById('graphArea').clientHeight;
+  svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity.translate(w/2,h/2).scale(0.8).translate(-w/2,-h/2));
+}
+function toggleLabels() {
+  showLabels = !showLabels;
+  d3.selectAll('.node-label').style('display', showLabels?'':'none');
+}
+
+function filterAndRender() {
+  var filtered = graphData.entities.filter(function(e){return activeEntityTypes.indexOf(e.type)!==-1});
+  var ids = {};
+  filtered.forEach(function(e){ids[e.id]=true});
+  var filteredRels = graphData.relations.filter(function(r){return ids[r.source_entity_id]&&ids[r.target_entity_id]});
+  renderGraph(filtered, filteredRels);
+}
+
+// ============== MAIN FLOW ==============
+async function extractKG() {
+  var text = document.getElementById('textInput').value.trim();
+  if (!text) return;
+
+  var btn = document.getElementById('extractBtn');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    showToast('正在抽取实体和关系...', 'info');
+    var data = await apiExtract(text, activeEntityTypes, parseInt(document.getElementById('maxEntities').value)||50, parseFloat(document.getElementById('confThreshold').value)||0.7);
+
+    graphData.entities = data.entities || [];
+    graphData.relations = data.relations || [];
+
+    // Stats
+    var stats = data.graph_stats || {};
+    document.getElementById('statEntities').textContent = stats.total_entities || graphData.entities.length;
+    document.getElementById('statRelations').textContent = stats.total_relations || graphData.relations.length;
+    document.getElementById('statTime').textContent = (stats.processing_time || 0).toFixed(1);
+    document.getElementById('statsBar').style.display = '';
+
+    // Render
+    filterAndRender();
+
+    // Detail panel reset
+    document.getElementById('detailPanel').innerHTML = '<div class="detail-empty">🎯 点击图谱节点查看详情</div>';
+
+    showToast('抽取完成！' + graphData.entities.length + ' 个实体，' + graphData.relations.length + ' 个关系', 'success');
+
+  } catch(e) {
+    showToast('抽取失败: '+e.message, 'error');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = !document.getElementById('textInput').value.trim();
+  }
+}
+
+// ============== EXPORT ==============
+async function exportGraph(format) {
+  try {
+    if (MOCK_MODE) {
+      var content = format==='csv'
+        ? 'source,relation,target\n' + graphData.relations.map(function(r){
+            var s=graphData.entities.find(function(e){return e.id===r.source_entity_id});
+            var t=graphData.entities.find(function(e){return e.id===r.target_entity_id});
+            return (s?s.name:'')+','+r.relation_type+','+(t?t.name:'');
+          }).join('\n')
+        : JSON.stringify({entities:graphData.entities,relations:graphData.relations},null,2);
+      var blob = new Blob([content],{type:format==='csv'?'text/csv':'application/json'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'knowledge_graph.'+format;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast('已导出 '+format.toUpperCase(), 'success');
+      return;
+    }
+    var data = await apiExport(graphData.entities, graphData.relations, format);
+    if (data.download_url) { window.open(API_BASE + data.download_url, '_blank'); }
+    showToast('已导出 '+format.toUpperCase(), 'success');
+  } catch(e) { showToast('导出失败: '+e.message, 'error'); }
+}
+
+// ============== INIT ==============
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    var res = await fetch(API_BASE+'/health', {signal:AbortSignal.timeout(2000)});
+    var d = await res.json();
+    MOCK_MODE = !(d && d.status==='healthy');
+  } catch(e) { MOCK_MODE = true; }
+
+  checkHealth();
+  setInterval(checkHealth, 30000);
+  renderEntityChips();
+  updateCharCount();
+});
+</script>
+</body>
+</html>
