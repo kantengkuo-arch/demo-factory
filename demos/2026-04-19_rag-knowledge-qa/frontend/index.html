@@ -225,3 +225,370 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// ============== CONFIG ==============
+var API_BASE = 'http://localhost:8000';
+var MOCK_MODE = false;
+
+// ============== STATE ==============
+var documents = [];
+var selectedDocIds = [];
+var isWaiting = false;
+
+// ============== MOCK ==============
+var mockDocs = [
+  { document_id: 'mock-1', filename: '产品需求文档.pdf', upload_time: new Date().toISOString(), total_chunks: 24, file_size: 245760 },
+  { document_id: 'mock-2', filename: '技术架构设计.md', upload_time: new Date().toISOString(), total_chunks: 18, file_size: 51200 }
+];
+
+function mockUploadDoc(file) {
+  return new Promise(function(r) {
+    setTimeout(function() {
+      var doc = { document_id: 'mock-' + Date.now(), filename: file.name, upload_time: new Date().toISOString(), total_chunks: Math.floor(Math.random() * 30) + 5, file_size: file.size };
+      mockDocs.push(doc);
+      r({ document_id: doc.document_id, filename: doc.filename, total_chunks: doc.total_chunks, processing_status: 'completed', status: 'success' });
+    }, 1500);
+  });
+}
+
+function mockChat(question) {
+  return new Promise(function(r) {
+    setTimeout(function() {
+      r({
+        answer: '根据您上传的文档，我找到了以下相关信息：\n\n**关键要点：**\n1. 文档中提到了多个重要概念和技术方案\n2. 建议重点关注第三章的架构设计部分\n3. 实施路径分为三个阶段推进\n\n> 这是一段来自文档的引用内容，展示了 RAG 系统的检索能力。\n\n如需了解更多细节，请继续提问。',
+        sources: [
+          { document_id: 'mock-1', filename: '产品需求文档.pdf', chunk_text: '本文档描述了产品的核心需求和技术架构。系统采用微服务架构，支持高并发访问和弹性扩展...', similarity_score: 0.92 },
+          { document_id: 'mock-2', filename: '技术架构设计.md', chunk_text: 'RAG 系统的核心在于检索增强生成，通过向量相似度匹配找到最相关的文档片段...', similarity_score: 0.87 }
+        ],
+        question: question,
+        status: 'success'
+      });
+    }, 2000);
+  });
+}
+
+// ============== API ==============
+async function apiHealth() {
+  if (MOCK_MODE) return { status: 'healthy' };
+  var res = await fetch(API_BASE + '/health');
+  return await res.json();
+}
+
+async function apiUploadDoc(file) {
+  if (MOCK_MODE) return mockUploadDoc(file);
+  var fd = new FormData();
+  fd.append('file', file);
+  fd.append('chunk_size', '1000');
+  fd.append('overlap', '200');
+  var res = await fetch(API_BASE + '/api/upload-document', { method: 'POST', body: fd });
+  if (!res.ok) throw new Error('上传失败: ' + res.status);
+  return await res.json();
+}
+
+async function apiDocuments() {
+  if (MOCK_MODE) return { documents: mockDocs, status: 'success' };
+  var res = await fetch(API_BASE + '/api/documents');
+  if (!res.ok) throw new Error('获取文档列表失败');
+  return await res.json();
+}
+
+async function apiDeleteDoc(id) {
+  if (MOCK_MODE) { mockDocs = mockDocs.filter(function(d) { return d.document_id !== id; }); return { status: 'success' }; }
+  var res = await fetch(API_BASE + '/api/documents/' + id, { method: 'DELETE' });
+  if (!res.ok) throw new Error('删除失败');
+  return await res.json();
+}
+
+async function apiChat(question, docIds, topK, temperature) {
+  if (MOCK_MODE) return mockChat(question);
+  var res = await fetch(API_BASE + '/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: question, document_ids: docIds || [], top_k: topK || 5, temperature: temperature || 0.7 })
+  });
+  if (!res.ok) throw new Error('问答请求失败: ' + res.status);
+  return await res.json();
+}
+
+// ============== TOAST ==============
+function showToast(msg, type) {
+  type = type || 'info';
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  var icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  t.innerHTML = '<span>' + (icons[type] || '') + '</span><span>' + msg + '</span>';
+  c.appendChild(t);
+  setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(40px)'; setTimeout(function() { t.remove(); }, 300); }, 3500);
+}
+
+// ============== HEALTH CHECK ==============
+async function checkHealth() {
+  var dot = document.getElementById('statusDot');
+  var txt = document.getElementById('statusText');
+  try {
+    var d = await apiHealth();
+    dot.className = 'status-dot ' + (d.status === 'healthy' ? 'online' : 'offline');
+    txt.textContent = d.status === 'healthy' ? (MOCK_MODE ? 'Mock 模式' : 'API 在线') : 'API 异常';
+  } catch(e) {
+    dot.className = 'status-dot offline';
+    txt.textContent = 'API 离线';
+  }
+}
+
+// ============== SIDEBAR ==============
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ============== UPLOAD ==============
+function setupUpload() {
+  var zone = document.getElementById('uploadZone');
+  var input = document.getElementById('fileInput');
+  zone.addEventListener('click', function() { input.click(); });
+  zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', function() { zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+  input.addEventListener('change', function() { if (input.files.length) { handleFiles(input.files); input.value = ''; } });
+}
+
+async function handleFiles(files) {
+  var prog = document.getElementById('uploadProgress');
+  var bar = document.getElementById('uploadBar');
+  var label = document.getElementById('uploadLabel');
+  prog.style.display = 'block';
+
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
+    var valid = /\.(pdf|txt|md|docx)$/i.test(file.name);
+    if (!valid) { showToast(file.name + ' 格式不支持', 'error'); continue; }
+
+    label.textContent = '正在上传 ' + file.name + '...';
+    bar.style.width = '30%';
+
+    try {
+      bar.style.width = '60%';
+      label.textContent = '解析分块中...';
+      var res = await apiUploadDoc(file);
+      bar.style.width = '100%';
+      label.textContent = '✅ ' + file.name + ' — ' + res.total_chunks + ' 个分块';
+      showToast(file.name + ' 上传成功，' + res.total_chunks + ' 个分块', 'success');
+    } catch(e) {
+      showToast('上传失败: ' + e.message, 'error');
+    }
+  }
+
+  setTimeout(function() { prog.style.display = 'none'; bar.style.width = '0'; }, 2000);
+  loadDocuments();
+}
+
+// ============== DOC LIST ==============
+async function loadDocuments() {
+  try {
+    var data = await apiDocuments();
+    documents = data.documents || [];
+    renderDocList();
+  } catch(e) {
+    showToast('获取文档失败', 'error');
+  }
+}
+
+function renderDocList() {
+  var list = document.getElementById('docList');
+  var empty = document.getElementById('docEmpty');
+  var count = document.getElementById('docCount');
+  count.textContent = documents.length ? '(' + documents.length + ')' : '';
+
+  if (!documents.length) {
+    list.innerHTML = '';
+    list.appendChild(empty);
+    empty.style.display = '';
+    return;
+  }
+  if (empty.parentNode === list) list.removeChild(empty);
+
+  list.innerHTML = documents.map(function(d) {
+    var sel = selectedDocIds.indexOf(d.document_id) !== -1;
+    var size = d.file_size < 1024 ? d.file_size + ' B' : d.file_size < 1048576 ? (d.file_size / 1024).toFixed(1) + ' KB' : (d.file_size / 1048576).toFixed(1) + ' MB';
+    var ext = d.filename.split('.').pop().toUpperCase();
+    var icons = { PDF: '📕', TXT: '📄', MD: '📝', DOCX: '📘' };
+    return '<div class="doc-item' + (sel ? ' selected' : '') + '" data-id="' + d.document_id + '" onclick="toggleDocSelect(\'' + d.document_id + '\')">'
+      + '<div class="doc-name">' + (icons[ext] || '📄') + ' ' + d.filename + '</div>'
+      + '<div class="doc-meta"><span>' + d.total_chunks + ' 分块</span><span>' + size + '</span></div>'
+      + '<button class="doc-delete" onclick="event.stopPropagation();deleteDoc(\'' + d.document_id + '\',\'' + d.filename.replace(/'/g, "\\'") + '\')" title="删除">🗑</button>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleDocSelect(id) {
+  var idx = selectedDocIds.indexOf(id);
+  if (idx === -1) selectedDocIds.push(id); else selectedDocIds.splice(idx, 1);
+  renderDocList();
+}
+
+async function deleteDoc(id, name) {
+  if (!confirm('确认删除「' + name + '」？')) return;
+  try {
+    await apiDeleteDoc(id);
+    selectedDocIds = selectedDocIds.filter(function(x) { return x !== id; });
+    showToast(name + ' 已删除', 'success');
+    loadDocuments();
+  } catch(e) {
+    showToast('删除失败: ' + e.message, 'error');
+  }
+}
+
+// ============== CHAT ==============
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  document.getElementById('sendBtn').disabled = !el.value.trim() || isWaiting;
+}
+
+function handleInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function askQuestion(q) {
+  document.getElementById('chatInput').value = q;
+  autoResize(document.getElementById('chatInput'));
+  sendMessage();
+}
+
+function hideWelcome() {
+  var w = document.getElementById('welcomeScreen');
+  if (w) w.style.display = 'none';
+}
+
+function appendMessage(role, content) {
+  hideWelcome();
+  var container = document.getElementById('chatMessages');
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+
+  var bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+
+  if (role === 'assistant' && typeof marked !== 'undefined') {
+    bubble.innerHTML = marked.parse(content);
+  } else {
+    bubble.textContent = content;
+  }
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function appendSources(msgDiv, sources) {
+  if (!sources || !sources.length) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'sources';
+  var toggle = document.createElement('div');
+  toggle.className = 'sources-toggle';
+  toggle.innerHTML = '📎 ' + sources.length + ' 个参考来源 ▾';
+  var list = document.createElement('div');
+  list.className = 'sources-list';
+
+  toggle.addEventListener('click', function() {
+    list.classList.toggle('open');
+    toggle.innerHTML = list.classList.contains('open')
+      ? '📎 ' + sources.length + ' 个参考来源 ▴'
+      : '📎 ' + sources.length + ' 个参考来源 ▾';
+  });
+
+  sources.forEach(function(s) {
+    var card = document.createElement('div');
+    card.className = 'source-card';
+    card.innerHTML = '<div class="sc-header"><span class="sc-file">📄 ' + s.filename + '</span><span class="sc-score">相似度 ' + (s.similarity_score * 100).toFixed(0) + '%</span></div><div class="sc-text">' + escapeHtml(s.chunk_text) + '</div>';
+    card.addEventListener('click', function() { card.classList.toggle('expanded'); });
+    list.appendChild(card);
+  });
+
+  wrap.appendChild(toggle);
+  wrap.appendChild(list);
+  msgDiv.appendChild(wrap);
+}
+
+function showTyping() {
+  hideWelcome();
+  var container = document.getElementById('chatMessages');
+  var div = document.createElement('div');
+  div.className = 'msg assistant';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  var t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+function escapeHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+async function sendMessage() {
+  var input = document.getElementById('chatInput');
+  var question = input.value.trim();
+  if (!question || isWaiting) return;
+
+  isWaiting = true;
+  input.value = '';
+  autoResize(input);
+  document.getElementById('sendBtn').disabled = true;
+
+  appendMessage('user', question);
+  showTyping();
+
+  var topK = parseInt(document.getElementById('topKInput').value) || 5;
+  var temp = parseFloat(document.getElementById('tempSlider').value) || 0.7;
+
+  try {
+    var data = await apiChat(question, selectedDocIds, topK, temp);
+    removeTyping();
+    var msgDiv = appendMessage('assistant', data.answer);
+    appendSources(msgDiv, data.sources);
+  } catch(e) {
+    removeTyping();
+    appendMessage('assistant', '❌ 出错了：' + e.message);
+    showToast('问答失败: ' + e.message, 'error');
+  } finally {
+    isWaiting = false;
+    document.getElementById('sendBtn').disabled = !input.value.trim();
+  }
+}
+
+// ============== INIT ==============
+document.addEventListener('DOMContentLoaded', async function() {
+  // Auto-detect API
+  try {
+    var res = await fetch(API_BASE + '/health', { signal: AbortSignal.timeout(2000) });
+    var data = await res.json();
+    MOCK_MODE = !(data && data.status === 'healthy');
+  } catch(e) {
+    MOCK_MODE = true;
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30000);
+  setupUpload();
+  loadDocuments();
+
+  // Mobile: start with sidebar collapsed
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.add('collapsed');
+  }
+});
+</script>
+</body>
+</html>
