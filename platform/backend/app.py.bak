@@ -41,18 +41,11 @@ def load_registry():
 
 
 def find_available_port():
-    """找一个真正可用的端口"""
+    """找一个可用端口"""
     global NEXT_PORT
-    import socket
-    while True:
-        port = NEXT_PORT
-        NEXT_PORT += 1
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(('0.0.0.0', port))
-                return port
-            except OSError:
-                continue
+    port = NEXT_PORT
+    NEXT_PORT += 1
+    return port
 
 
 @app.get("/health")
@@ -91,8 +84,11 @@ def serve_demo_ui(slug: str):
 
     html = html_path.read_text(encoding="utf-8")
 
-    # 总是把前端里的 API 地址改为走 7000 代理
-    html = html.replace("http://localhost:8000", f"/api/demos/{slug}/proxy")
+    # 把前端里的 API 地址改为走 7000 代理
+    if slug in running_demos:
+        port = running_demos[slug]["port"]
+        html = html.replace("http://localhost:8000", f"/api/demos/{slug}/proxy")
+        html = html.replace("'http://localhost:8000'", f"'/api/demos/{slug}/proxy'")
 
     return HTMLResponse(content=html)
 
@@ -260,6 +256,10 @@ def get_arena():
     from arena import get_arena_data
     return get_arena_data()
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=7000)
+
 # === Demo API 代理 ===
 from fastapi import Request
 from fastapi.responses import Response
@@ -294,37 +294,3 @@ def register_running_demo(slug: str, port: int):
         "method": "process",
     }
     return {"message": f"已注册 {slug} -> port {port}"}
-
-@app.get("/api/monitor")
-def get_monitor():
-    """工厂监控数据"""
-    from monitor import get_monitor_data
-    return get_monitor_data()
-
-@app.get("/api/settings")
-def get_settings():
-    """获取所有模型 API 配置（脱敏）"""
-    from settings import load_config
-    return load_config()
-
-
-@app.post("/api/settings/{model_type}")
-def update_settings(model_type: str, data: dict):
-    """更新某类模型的 API 配置"""
-    from settings import save_config, MODEL_TYPES
-    if model_type not in MODEL_TYPES:
-        raise HTTPException(status_code=400, detail=f"不支持的模型类型: {model_type}")
-    return save_config(model_type, data)
-
-@app.post("/api/settings/{model_type}/test")
-def test_model_api(model_type: str):
-    """测试某类模型的 API 是否可用"""
-    from settings import test_api, MODEL_TYPES
-    if model_type not in MODEL_TYPES:
-        raise HTTPException(status_code=400, detail=f"不支持的模型类型: {model_type}")
-    return test_api(model_type)
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7000)

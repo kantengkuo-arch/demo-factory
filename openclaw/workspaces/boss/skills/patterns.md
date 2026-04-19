@@ -10,3 +10,9 @@
 **可复用**：统计回退预测方法（线性趋势+季节性分解）可用于任何时序类 Demo；多编码 CSV 解析逻辑；Plotly 暗色主题图表配置；拖拽上传+骨架屏加载的前端模式
 **踩坑**：前后端 API 参数名不一致（time_column vs date_column, horizon vs forecast_steps）导致联调失败——这个问题在 Mock 模式下完全隐藏，审查流程未做真实联调测试。教训：**审查必须关闭 Mock 模式做端到端测试**
 **评分**：71/100
+
+## RAG 智能知识库问答 — 2026-04-19
+**技术点**：RAG 全流程（文档解析→智能分块→Embedding API→ChromaDB→LLM 生成）、零本地模型设计（SiliconFlow Embedding+Chat API）、JSON 持久化元信息、Pydantic 数据验证
+**可复用**：① 外部 API 调用模式（从 config JSON 读取 api_url/api_key/model，httpx 异步请求，兼容 OpenAI 格式）② 智能分块函数（段落→换行→句号边界优先切分，带重叠）③ ChromaDB 持久化+余弦相似度检索 ④ ChatGPT 风格对话 UI + Markdown 渲染 + 来源引用折叠卡片 ⑤ JSON 文件持久化避免重启丢数据
+**踩坑**：① 前端 `<link rel="stylesheet">` 误引 JS 文件，应删除或改为 `<script>` ② `/api/chat` 用 dict 而非 Pydantic model 接收参数，与其他接口风格不统一 ③ 之前 #19 的 RAG Demo 用了本地 sentence-transformers 模型导致依赖巨大+启动慢，这次改为全 API 调用是更好的方案
+**评分**：95/100

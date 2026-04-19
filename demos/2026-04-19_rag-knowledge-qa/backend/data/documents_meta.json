@@ -1,0 +1,11 @@
+{
+  "4f5e2790-7104-4442-8808-34bef2135885": {
+    "document_id": "4f5e2790-7104-4442-8808-34bef2135885",
+    "filename": "test_rag.txt",
+    "upload_time": "2026-04-19T09:57:43.473535+00:00",
+    "total_chunks": 1,
+    "file_size": 249,
+    "chunk_size": 500,
+    "overlap": 50
+  }
+}

@@ -9,8 +9,8 @@ from datetime import datetime
 
 
 LABEL_ORDER = [
-    "pending-approval", "needs-scout", "needs-coding",
-    "needs-review", "needs-merge", "needs-eval", "done"
+    "needs-scout", "needs-coding",
+    "needs-review", "needs-merge"
 ]
 
 

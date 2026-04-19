@@ -174,6 +174,8 @@
         <div class="tabs">
             <div class="tab active" onclick="switchPage('demos')">Demo 列表</div>
             <div class="tab" onclick="switchPage('timeline')">协作时间线</div>
+            <div class="tab" onclick="switchPage('monitor')">工厂监控</div>
+            <div class="tab" onclick="switchPage('settings')">设置</div>
             <div class="tab" onclick="switchPage('arena')">竞技场</div>
         </div>
     </nav>
@@ -206,6 +208,59 @@
             </p>
             <div id="arena-container"></div>
         </div>
+        <!-- ========== 监控页 ========== -->
+        <div id="page-monitor" class="page">
+            <h2 style="margin-bottom:1rem">📊 工厂监控</h2>
+
+            <!-- Agent 协作流程图 -->
+            <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+                <h3 style="margin-bottom:1rem;font-size:1rem">🔄 Agent 协作流程</h3>
+                <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;flex-wrap:wrap;font-size:0.85rem">
+                    <div style="background:#E4E669;color:#000;padding:6px 12px;border-radius:8px">🔭 Trend<br><span style="font-size:0.7rem">找方向</span></div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="background:#E4E669;color:#000;padding:6px 12px;border-radius:8px;border:2px dashed #666">👤 你确认</div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="background:#0075CA;color:#fff;padding:6px 12px;border-radius:8px">🔭 Scout<br><span style="font-size:0.7rem">调研+契约</span></div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                        <div style="background:#7B61FF;color:#fff;padding:6px 12px;border-radius:8px">⚙️ Backend<br><span style="font-size:0.7rem">写API</span></div>
+                        <div style="background:#7B61FF;color:#fff;padding:6px 12px;border-radius:8px">🎨 Frontend<br><span style="font-size:0.7rem">写UI</span></div>
+                    </div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="background:#FF9933;color:#fff;padding:6px 12px;border-radius:8px">🔍 Reviewer<br><span style="font-size:0.7rem">审查+测试</span></div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="background:#28A745;color:#fff;padding:6px 12px;border-radius:8px;border:2px dashed rgba(255,255,255,0.5)">👤 你合PR</div>
+                    <div style="color:#6b7280">→</div>
+                    <div style="background:#D93F0B;color:#fff;padding:6px 12px;border-radius:8px">📊 Evaluator<br><span style="font-size:0.7rem">评分+小红书</span></div>
+                </div>
+                <div style="text-align:center;margin-top:0.75rem;font-size:0.75rem;color:#6b7280">
+                    实线框 = AI Agent 自动执行 &nbsp;|&nbsp; 虚线框 = 你手动操作 &nbsp;|&nbsp; Backend + Frontend 并行执行
+                </div>
+            </div>
+
+            <!-- Cron 状态 -->
+            <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+                <h3 style="margin-bottom:1rem;font-size:1rem">⏰ Cron 定时任务</h3>
+                <div id="cron-table"></div>
+            </div>
+
+            <!-- Token 消耗 -->
+            <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+                <h3 style="margin-bottom:1rem;font-size:1rem">🔥 Token 消耗统计</h3>
+                <div id="token-stats"></div>
+            </div>
+        </div>
+
+    
+        <!-- ========== 设置页 ========== -->
+        <div id="page-settings" class="page">
+            <h2 style="margin-bottom:1rem">⚙️ 模型 API 设置</h2>
+            <p style="color:#94a3b8;margin-bottom:1.5rem">
+                所有 Demo 统一使用这些 API 调用模型能力，不在本地下载模型。修改后新生成的 Demo 会自动使用新配置。
+            </p>
+            <div id="settings-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem"></div>
+        </div>
+
     </div>
 
     <script>
@@ -218,6 +273,8 @@
             document.getElementById('page-' + name).classList.add('active');
             event.target.classList.add('active');
             if (name === 'timeline') loadTimeline();
+            if (name === 'monitor') loadMonitor();
+            if (name === 'settings') loadSettings();
             if (name === 'arena') loadArena();
         }
 
@@ -289,7 +346,7 @@
                             </div>
                             <div class="actions">
                                 ${running
-                                    ? `<button class="btn btn-open" onclick="window.open('${d.url}','_blank')">打开体验</button>
+                                    ? `<button class="btn btn-open" onclick="window.open('http://localhost:7000/api/demos/${d.slug}/ui','_blank')">打开体验</button>
                                        <button class="btn btn-stop" onclick="stopDemo('${d.slug}')">停止</button>`
                                     : `<button class="btn btn-start" onclick="startDemo('${d.slug}')">启动</button>`
                                 }
@@ -398,9 +455,10 @@
                 'needs-eval': '#D93F0B',
                 'done': '#666666',
             };
-            const totalMs = issue.phases.reduce((s, p) => s + p.duration_min, 0);
+            const workPhases = issue.phases.filter(p => p.label !== 'needs-merge');
+            const totalMs = workPhases.reduce((s, p) => s + p.duration_min, 0);
             const bars = issue.phases.map(p => {
-                const pct = totalMs > 0 ? (p.duration_min / totalMs * 100) : 0;
+                const pct = p.label === 'needs-merge' ? 5 : (totalMs > 0 ? (p.duration_min / totalMs * 95) : 0);
                 const bg = colors[p.label] || '#4b5563';
                 return `<div title="${p.label}: ${p.duration_min}分钟" style="width:${pct}%;background:${bg};height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:white;min-width:30px;overflow:hidden">${p.label.replace('needs-','')}</div>`;
             }).join('');
@@ -445,6 +503,142 @@
                 `).join('');
             } catch (e) {
                 container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>竞技场 API 未启用</p></div>`;
+            }
+        }
+
+        // === 监控 ===
+        async function loadMonitor() {
+            try {
+                const res = await fetch(API + '/api/monitor');
+                const data = await res.json();
+
+                // Cron 表格
+                const cronDiv = document.getElementById('cron-table');
+                const jobs = data.cron?.jobs || [];
+                if (jobs.length > 0) {
+                    cronDiv.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">' +
+                        '<tr style="color:#94a3b8;border-bottom:1px solid #1f2937"><td style="padding:8px">Agent</td><td>任务</td><td>频率</td><td>状态</td></tr>' +
+                        jobs.map(j => `<tr style="border-bottom:1px solid #1f2937">
+                            <td style="padding:8px;font-weight:600">${j.agentId || j.name || ''}</td>
+                            <td>${j.name || ''}</td>
+                            <td>${j.schedule?.kind === 'every' ? '每' + Math.round((j.schedule?.everyMs||0)/60000) + '分钟' : j.schedule?.expr || ''}</td>
+                            <td><span style="color:${j.state?.lastStatus === 'ok' ? '#10b981' : '#ef4444'}">${j.state?.lastStatus === 'ok' ? '✅ 正常' : '❌ ' + (j.state?.lastStatus || 'unknown')}</span></td>
+                        </tr>`).join('') + '</table>';
+                } else {
+                    cronDiv.innerHTML = '<p style="color:#6b7280">无 cron 数据</p>';
+                }
+
+                // Token 统计
+                const tokenDiv = document.getElementById('token-stats');
+                const agents = data.token_usage?.agents || {};
+                const totalTokens = data.token_usage?.total_tokens || 0;
+                const agentList = Object.values(agents).sort((a, b) => b.total_tokens - a.total_tokens);
+                
+                let tokenHtml = `<div style="margin-bottom:1rem;font-size:1.5rem;font-weight:700;color:#3b82f6">${(totalTokens / 1000).toFixed(0)}K <span style="font-size:0.9rem;color:#94a3b8;font-weight:400">总 Token</span></div>`;
+                tokenHtml += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem">';
+                tokenHtml += '<tr style="color:#94a3b8;border-bottom:1px solid #1f2937"><td style="padding:8px">Agent</td><td>Session 数</td><td>Input</td><td>Output</td><td>合计</td><td>最近活跃</td></tr>';
+                for (const a of agentList) {
+                    const ago = a.last_active_ms > 0 ? Math.round(a.last_active_ms / 60000) + '分钟前' : '-';
+                    tokenHtml += `<tr style="border-bottom:1px solid #1f2937">
+                        <td style="padding:8px;font-weight:600">${a.agent_id}</td>
+                        <td>${a.session_count}</td>
+                        <td>${(a.total_input_tokens / 1000).toFixed(1)}K</td>
+                        <td>${(a.total_output_tokens / 1000).toFixed(1)}K</td>
+                        <td style="color:#3b82f6;font-weight:600">${(a.total_tokens / 1000).toFixed(1)}K</td>
+                        <td style="color:#94a3b8">${ago}</td>
+                    </tr>`;
+                }
+                tokenHtml += '</table>';
+                tokenDiv.innerHTML = tokenHtml;
+
+            } catch (e) {
+                document.getElementById('cron-table').innerHTML = '<p style="color:#ef4444">监控 API 加载失败: ' + e.message + '</p>';
+            }
+        }
+
+
+        
+
+        // === 设置 ===
+        async function loadSettings() {
+            try {
+                const res = await fetch(API + '/api/settings');
+                const data = await res.json();
+                const container = document.getElementById('settings-cards');
+                const typeLabels = {chat:'💬 对话模型',embedding:'🔗 Embedding 模型',image:'🎨 图像模型',speech:'🔊 语音模型'};
+                container.innerHTML = Object.entries(data).map(([type, c]) => `
+                    <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;padding:1.5rem">
+                        <h3 style="margin-bottom:1rem;font-size:1rem">${typeLabels[type] || type}</h3>
+                        <div style="margin-bottom:0.75rem">
+                            <label style="display:block;color:#94a3b8;font-size:0.8rem;margin-bottom:0.25rem">Provider</label>
+                            <select id="s-${type}-provider" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.9rem">
+                                <option value="openai" ${c.provider==='openai'?'selected':''}>OpenAI</option>
+                                <option value="anthropic" ${c.provider==='anthropic'?'selected':''}>Anthropic</option>
+                                <option value="deepseek" ${c.provider==='deepseek'?'selected':''}>DeepSeek</option>
+                                <option value="custom" ${c.provider==='custom'?'selected':''}>自定义</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom:0.75rem">
+                            <label style="display:block;color:#94a3b8;font-size:0.8rem;margin-bottom:0.25rem">API URL</label>
+                            <input id="s-${type}-url" type="text" value="${c.api_url||''}" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.9rem" />
+                        </div>
+                        <div style="margin-bottom:0.75rem">
+                            <label style="display:block;color:#94a3b8;font-size:0.8rem;margin-bottom:0.25rem">API Key</label>
+                            <input id="s-${type}-key" type="password" placeholder="留空则不修改" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.9rem" />
+                            <div style="color:#6b7280;font-size:0.75rem;margin-top:0.15rem">当前: ${c.api_key_masked||'未设置'}</div>
+                        </div>
+                        <div style="margin-bottom:0.75rem">
+                            <label style="display:block;color:#94a3b8;font-size:0.8rem;margin-bottom:0.25rem">模型</label>
+                            <input id="s-${type}-model" type="text" value="${c.model||''}" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font-size:0.9rem" />
+                        </div>
+                        <div style="display:flex;gap:0.5rem">
+                            <button onclick="saveModelConfig('${type}')" class="btn btn-start" style="flex:1;padding:0.5rem">保存</button>
+                            <button onclick="testModelApi('${type}')" class="btn btn-open" style="flex:1;padding:0.5rem">测试连接</button>
+                        </div>
+                        <div id="s-${type}-msg" style="margin-top:0.5rem;font-size:0.85rem;text-align:center"></div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('settings-cards').innerHTML = '<p style="color:#ef4444">加载失败</p>';
+            }
+        }
+
+        async function saveModelConfig(type) {
+            const data = {
+                api_url: document.getElementById('s-'+type+'-url').value,
+                model: document.getElementById('s-'+type+'-model').value,
+                provider: document.getElementById('s-'+type+'-provider').value,
+            };
+            const key = document.getElementById('s-'+type+'-key').value;
+            if (key) data.api_key = key;
+            try {
+                const res = await fetch(API+'/api/settings/'+type, {
+                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)
+                });
+                if (res.ok) {
+                    document.getElementById('s-'+type+'-msg').innerHTML = '<span style="color:#10b981">✅ 已保存</span>';
+                    setTimeout(()=>{document.getElementById('s-'+type+'-msg').innerHTML='';}, 2000);
+                    loadSettings();
+                }
+            } catch(e) {
+                document.getElementById('s-'+type+'-msg').innerHTML = '<span style="color:#ef4444">保存失败</span>';
+            }
+        }
+
+        async function testModelApi(type) {
+            const msgEl = document.getElementById('s-'+type+'-msg');
+            msgEl.innerHTML = '<span style="color:#94a3b8">⏳ 测试中...</span>';
+            try {
+                const res = await fetch(API+'/api/settings/'+type+'/test', {method:'POST'});
+                const data = await res.json();
+                if (data.success) {
+                    msgEl.innerHTML = '<span style="color:#10b981">' + data.message + '</span>';
+                } else {
+                    msgEl.innerHTML = '<span style="color:#ef4444">❌ ' + data.error + '</span>';
+                }
+                setTimeout(()=>{msgEl.innerHTML='';}, 5000);
+            } catch(e) {
+                msgEl.innerHTML = '<span style="color:#ef4444">❌ 测试请求失败: ' + e.message + '</span>';
             }
         }
 

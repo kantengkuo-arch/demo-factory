@@ -1,0 +1,26 @@
+{
+  "chat": {
+    "api_url": "https://api.siliconflow.cn/v1",
+    "api_key": "sk-aymcwfviwvtixxadwvmtjczfxjfmlldcfedgvfyjcfvfmgpj",
+    "model": "Qwen/Qwen3.5-27B",
+    "provider": "custom"
+  },
+  "embedding": {
+    "api_url": "https://api.siliconflow.cn/v1",
+    "api_key": "sk-aymcwfviwvtixxadwvmtjczfxjfmlldcfedgvfyjcfvfmgpj",
+    "model": "BAAI/bge-m3",
+    "provider": "custom"
+  },
+  "image": {
+    "api_url": "https://api.openai.com/v1",
+    "api_key": "",
+    "model": "dall-e-3",
+    "provider": "openai"
+  },
+  "speech": {
+    "api_url": "https://api.openai.com/v1",
+    "api_key": "",
+    "model": "tts-1",
+    "provider": "openai"
+  }
+}
